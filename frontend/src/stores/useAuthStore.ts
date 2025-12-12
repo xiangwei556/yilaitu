@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 interface User {
   id: number;
@@ -12,35 +12,60 @@ interface AuthState {
   isLoggedIn: boolean;
   user: User | null;
   token: string | null;
-  isAuthModalOpen: boolean;
-  login: (token: string, user: User) => void;
+  login: (userData: User, token: string) => void;
   logout: () => void;
-  openAuthModal: () => void;
-  closeAuthModal: () => void;
+  updateUser: (userData: Partial<User>) => void;
+  updatePoints: (points: number) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  devtools(
+const initialUser = {
+  id: 1,
+  nickname: '测试用户',
+  avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+  points: 1250
+};
+
+// 使用localStorage持久化存储
+const useAuthStore = create<AuthState>()(
+  persist(
     (set) => ({
-      isLoggedIn: !!localStorage.getItem('token'),
-      user: JSON.parse(localStorage.getItem('user') || 'null'),
-      token: localStorage.getItem('token'),
-      isAuthModalOpen: false,
-
-      login: (token, user) => {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        set({ isLoggedIn: true, user, token });
+      isLoggedIn: true,
+      user: initialUser,
+      token: 'dummy-token-123456',
+      
+      login: (userData, token) => {
+        set(() => ({
+          isLoggedIn: true,
+          user: userData,
+          token
+        }));
       },
-
+      
       logout: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        set({ isLoggedIn: false, user: null, token: null });
+        set(() => ({
+          isLoggedIn: false,
+          user: null,
+          token: null
+        }));
       },
-
-      openAuthModal: () => set({ isAuthModalOpen: true }),
-      closeAuthModal: () => set({ isAuthModalOpen: false }),
-    })
+      
+      updateUser: (userData) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...userData } : null
+        }));
+      },
+      
+      updatePoints: (points) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, points } : null
+        }));
+      }
+    }),
+    {
+      name: 'auth-storage', // localStorage key
+      getStorage: () => localStorage
+    }
   )
 );
+
+export default useAuthStore;

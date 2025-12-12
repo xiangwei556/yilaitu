@@ -1,30 +1,28 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Header } from './components/Header';
-import { AuthModal } from './components/AuthModal';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import HomePage from './pages/HomePage';
-import { useAuthStore } from './stores/useAuthStore';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
+import zhCN from 'antd/locale/zh_CN';
+import Header from './components/Header';
+import ImageEdit from './components/ImageEdit';
+import PointsRecord from './components/PointsRecord';
+import './App.css';
 
-function App() {
-  const { isAuthModalOpen, closeAuthModal } = useAuthStore();
-
+const App: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Router>
+    <ConfigProvider locale={zhCN}>
+      <div className="app-container">
         <Header />
-        <main className="pt-16">
+        <main className="app-content">
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/" element={<ImageEdit />} />
+            <Route path="/image-edit" element={<ImageEdit />} />
+            <Route path="/points" element={<PointsRecord />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
-      </Router>
-      <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
-    </div>
+      </div>
+    </ConfigProvider>
   );
-}
+};
 
 export default App;

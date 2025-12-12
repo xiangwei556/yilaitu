@@ -1,0 +1,187 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  margin-right: 16px;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1890ff;
+  margin: 0;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.header-nav {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.header-nav li {
+  margin: 0 20px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #333;
+  transition: color 0.3s;
+}
+
+.header-nav li:hover {
+  color: #1890ff;
+}
+
+.header-nav li.active {
+  color: #1890ff;
+  font-weight: bold;
+  border-bottom: 2px solid #1890ff;
+  padding-bottom: 4px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.points {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #ff9800;
+}
+
+.points-icon {
+  margin-right: 4px;
+}
+
+.vip-button {
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+}
+
+.vip-button:hover {
+  background-color: #ff7875;
+}
+
+.user-info {
+  position: relative;
+}
+
+.avatar-container {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s;
+}
+
+.avatar-container:hover {
+  opacity: 0.8;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 280px;
+  padding: 16px;
+  z-index: 1001;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.user-profile-avatar {
+  margin-right: 12px;
+}
+
+.user-profile-info {
+  flex: 1;
+}
+
+.user-profile-name {
+  font-weight: bold;
+  margin: 0 0 4px 0;
+}
+
+.user-profile-email {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+}
+
+.user-actions {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-radius: 4px;
+}
+
+.action-item:hover {
+  background-color: #f5f5f5;
+}
+
+.action-icon {
+  margin-right: 8px;
+  color: #666;
+}
+
+.action-text {
+  font-size: 14px;
+  color: #333;
+}
+
+.login-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
