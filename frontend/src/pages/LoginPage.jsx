@@ -397,226 +397,248 @@ const LoginPage = () => {
       console.error('登录失败:', error);
       const errorMsg = error.response?.data?.msg || error.response?.data?.detail || error.response?.data?.message || '登录失败，请检查账号密码或网络连接';
       setGeneralError(`登录失败: ${errorMsg}`);
-    } finally {
-      setIsLoading(false);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
   
-  // 开始轮询检查微信登录状态
-  const startPolling = () => {
-    // 先停止之前的轮询（如果有）
-    stopPolling();
-    
-    // 每3秒检查一次登录状态
-    const timer = setInterval(() => {
-      checkWechatLoginStatus();
-    }, 3000);
-    
-    setPollingTimer(timer);
-  };
-  
-  // 停止轮询
-  const stopPolling = () => {
-    if (pollingTimer) {
-      clearInterval(pollingTimer);
-      setPollingTimer(null);
-    }
-  };
-  
-  // 处理表单输入变化
-  const handleInputChange = (e) => {
+  // 表单输入变化处理
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    // 清除对应字段的错误信息
+    // 清除对应字段的错误信息和通用错误
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    setGeneralError('');
+  };
+  
+  // 开始轮询微信登录状态
+  const startPolling = () => {
+    // 每2秒检查一次登录状态
+    const timer = setInterval(() => {
+      checkWechatLoginStatus();
+    }, 2000);
+    setPollingTimer(timer);
+  };
+
+  // 停止轮询微信登录状态
+  const stopPolling = () => {
+    if (pollingTimer) {
+      clearInterval(pollingTimer);
+      setPollingTimer(null);
+    }
+  };
+
+  // 切换登录方式
+  const switchLoginType = (type) => {
+    // 如果当前是微信登录且要切换到其他方式，停止轮询
+    if (loginType === 3 && type !== 3) {
+      stopPolling();
+    }
+    
+    setLoginType(type);
+    setErrors({}); // 切换时清除错误信息
+    setGeneralError(''); // 切换时清除通用错误信息
+    
+    // 如果切换到微信扫码登录，自动获取二维码并开始轮询
+    if (type === 3) {
+      refreshWechatQrCode();
+      startPolling();
     }
   };
   
   return (
-    <div className="login-page">
-      <div className="login-container">
-        <h1 className="login-title">易来图</h1>
-        <p className="login-subtitle">图片编辑与处理平台</p>
+    <div className="auth-container">
+      <div className="auth-card">
+        <h2 className="auth-title">用户登录</h2>
         
         {/* 登录方式切换 */}
-        <div className="login-tabs">
-          <button 
-            className={`tab-button ${loginType === 1 ? 'active' : ''}`}
-            onClick={() => setLoginType(1)}
+        <div className="login-type-tabs">
+          <button
+            className={`login-type-tab ${loginType === 1 ? 'active' : ''}`}
+            onClick={() => switchLoginType(1)}
           >
             手机号验证码
           </button>
-          <button 
-            className={`tab-button ${loginType === 2 ? 'active' : ''}`}
-            onClick={() => setLoginType(2)}
+          <button
+            className={`login-type-tab ${loginType === 2 ? 'active' : ''}`}
+            onClick={() => switchLoginType(2)}
           >
             账号密码
           </button>
-          <button 
-            className={`tab-button ${loginType === 3 ? 'active' : ''}`}
-            onClick={() => setLoginType(3)}
+          <button
+            className={`login-type-tab ${loginType === 3 ? 'active' : ''}`}
+            onClick={() => switchLoginType(3)}
           >
             微信扫码
           </button>
         </div>
         
-        {/* 错误提示 */}
-        {generalError && (
-          <div className="error-message">
-            {generalError}
-          </div>
-        )}
-        
-        {/* 表单内容 */}
-        {loginType === 1 && (
-          <form onSubmit={handleLogin} className="login-form">
-            <div className="form-group">
-              <label htmlFor="phone">手机号</label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder="请输入手机号"
-                className={errors.phone ? 'error' : ''}
-              />
-              {errors.phone && <div className="field-error">{errors.phone}</div>}
+        <form onSubmit={handleLogin} className="auth-form">
+          {/* 通用错误信息 */}
+          {generalError && (
+            <div className="error-message general-error">
+              {generalError}
             </div>
-            
-            <div className="form-group">
-              <label htmlFor="code">验证码</label>
-              <div className="code-input-group">
+          )}
+          {/* 手机号验证码登录 */}
+          {loginType === 1 && (
+            <>
+              <div className="form-group">
+                <label htmlFor="phone" className="form-label">手机号</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="请输入手机号"
+                  className={`form-input ${errors.phone ? 'input-error' : ''}`}
+                  maxLength={11}
+                />
+                {errors.phone && <span className="error-message">{errors.phone}</span>}
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="code" className="form-label">验证码</label>
+                <div className="code-input-group">
+                  <input
+                    type="text"
+                    id="code"
+                    name="code"
+                    value={formData.code}
+                    onChange={handleChange}
+                    placeholder="请输入验证码"
+                    className={`form-input ${errors.code ? 'input-error' : ''}`}
+                    maxLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={countdown > 0 || isLoading || !formData.phone}
+                    className="send-code-btn"
+                  >
+                    {countdown > 0 ? `${countdown}秒后重试` : '发送验证码'}
+                  </button>
+                </div>
+                {errors.code && <span className="error-message">{errors.code}</span>}
+              </div>
+            </>
+          )}
+          
+          {/* 账号密码登录 */}
+          {loginType === 2 && (
+            <>
+              <div className="form-group">
+                <label htmlFor="username" className="form-label">用户名/手机号</label>
                 <input
                   type="text"
-                  id="code"
-                  name="code"
-                  value={formData.code}
-                  onChange={handleInputChange}
-                  placeholder="请输入验证码"
-                  className={errors.code ? 'error' : ''}
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  placeholder="请输入用户名或手机号"
+                  className={`form-input ${errors.username ? 'input-error' : ''}`}
                 />
-                <button
-                  type="button"
-                  onClick={handleSendCode}
-                  disabled={countdown > 0 || !formData.phone || !/^1[3-9]\d{9}$/.test(formData.phone)}
-                  className="send-code-button"
-                >
-                  {countdown > 0 ? `${countdown}秒后重发` : '发送验证码'}
-                </button>
+                {errors.username && <span className="error-message">{errors.username}</span>}
               </div>
-              {errors.code && <div className="field-error">{errors.code}</div>}
-            </div>
-            
-            <div className="form-actions">
-              <button type="submit" className="login-button" disabled={isLoading}>
-                {isLoading ? '登录中...' : '登录'}
-              </button>
-            </div>
-          </form>
-        )}
-        
-        {loginType === 2 && (
-          <form onSubmit={handleLogin} className="login-form">
-            <div className="form-group">
-              <label htmlFor="username">用户名/手机号</label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleInputChange}
-                placeholder="请输入用户名或手机号"
-                className={errors.username ? 'error' : ''}
-              />
-              {errors.username && <div className="field-error">{errors.username}</div>}
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="password">密码</label>
-              <div className="password-input-group">
-                <input
-                  type={passwordVisible ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="请输入密码"
-                  className={errors.password ? 'error' : ''}
-                />
-                <button
-                  type="button"
-                  onClick={() => setPasswordVisible(!passwordVisible)}
-                  className="password-toggle"
-                >
-                  {passwordVisible ? '隐藏' : '显示'}
-                </button>
+              
+              <div className="form-group">
+                <label htmlFor="password" className="form-label">密码</label>
+                <div className="password-input-group">
+                  <input
+                    type={passwordVisible ? 'text' : 'password'}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="请输入密码"
+                    className={`form-input ${errors.password ? 'input-error' : ''}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPasswordVisible(!passwordVisible)}
+                    className="toggle-password-btn"
+                  >
+                    {passwordVisible ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
+                {errors.password && <span className="error-message">{errors.password}</span>}
               </div>
-              {errors.password && <div className="field-error">{errors.password}</div>}
-            </div>
-            
-            <div className="form-options">
-              <label className="remember-me">
+              
+              <div className="form-group remember-me-group">
                 <input
                   type="checkbox"
+                  id="rememberMe"
                   name="rememberMe"
                   checked={formData.rememberMe}
-                  onChange={handleInputChange}
+                  onChange={handleChange}
+                  className="remember-me-checkbox"
                 />
-                记住我
-              </label>
-              <Link to="/forgot-password" className="forgot-password">
-                忘记密码？
-              </Link>
-            </div>
-            
-            <div className="form-actions">
-              <button type="submit" className="login-button" disabled={isLoading}>
-                {isLoading ? '登录中...' : '登录'}
-              </button>
-            </div>
-          </form>
-        )}
-        
-        {loginType === 3 && (
-          <div className="wechat-login">
-            <div className="qr-code-container">
-              <img 
-                src={wechatQrCode} 
-                alt="微信扫码登录"
-                className="wechat-qr-code"
-              />
-              <div className="qr-code-timer">
-                二维码有效期：{qrCodeExpires}秒
+                <label htmlFor="rememberMe" className="remember-me-label">记住我</label>
+                <Link to="/forgot-password" className="forgot-password-link">忘记密码？</Link>
+              </div>
+            </>
+          )}
+          
+          {/* 微信扫码登录/绑定 */}
+          {loginType === 3 && (
+            <div className="wechat-login-container">
+              <div className="wechat-qr-code-wrapper">
+                {isLoading && (
+                  <div className="wechat-qr-code-loading">
+                    <div className="loading-spinner">加载中...</div>
+                  </div>
+                )}
+                <img 
+                  src={wechatQrCode} 
+                  alt={isBindingMode ? "微信扫码绑定" : "微信扫码登录"} 
+                  className={`wechat-qr-code ${isLoading ? 'loading' : ''}`} 
+                />
+                <button
+                  type="button"
+                  onClick={refreshWechatQrCode}
+                  className="refresh-qr-code-btn"
+                  title="刷新二维码"
+                  disabled={isLoading}
+                >
+                  🔄
+                </button>
+              </div>
+              <div className="wechat-login-hint">
+                <p>{isBindingMode ? "请使用微信扫描二维码绑定账号" : "请使用微信扫描二维码登录"}</p>
+                <p className="qr-code-expires">二维码有效期：{qrCodeExpires}秒</p>
               </div>
             </div>
-            <div className="wechat-login-tips">
-              <p>打开微信，扫描二维码登录/绑定账号</p>
-              <p>登录即表示同意 <Link to="/terms">用户协议</Link> 和 <Link to="/privacy">隐私政策</Link></p>
-            </div>
-            <button 
-              type="button" 
-              onClick={refreshWechatQrCode}
-              className="refresh-qr-button"
+          )}
+          
+          {/* 登录按钮 */}
+          {(loginType === 1 || loginType === 2) && (
+            <button
+              type="submit"
               disabled={isLoading}
+              className="auth-btn"
             >
-              {isLoading ? '刷新中...' : '刷新二维码'}
+              {isLoading ? '登录中...' : '登录'}
             </button>
+          )}
+          
+          {/* 注册链接 */}
+          <div className="auth-link">
+            <span>还没有账号？</span>
+            <Link to="/register" className="link-text">去注册</Link>
           </div>
-        )}
-        
-        {/* 底部链接 */}
-        <div className="login-footer">
-          <p>还没有账号？ <Link to="/register">立即注册</Link></p>
-        </div>
+        </form>
       </div>
     </div>
   );

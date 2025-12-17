@@ -1,71 +1,59 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
-interface User {
-  id: number;
-  nickname: string;
-  avatar: string;
-  points: number;
-}
-
-interface AuthState {
+interface AuthStore {
+  isOpen: boolean;
   isLoggedIn: boolean;
-  user: User | null;
-  token: string | null;
-  login: (userData: User, token: string) => void;
+  user: {
+    nickname: string;
+    id: string;
+    points: number;
+    avatar: string;
+  } | null;
+  openAuthModal: () => void;
+  closeAuthModal: () => void;
+  login: (userData?: { nickname: string; id: string; points: number; avatar: string; }) => void;
   logout: () => void;
-  updateUser: (userData: Partial<User>) => void;
-  updatePoints: (points: number) => void;
 }
 
-const initialUser = {
-  id: 1,
-  nickname: '测试用户',
-  avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-  points: 1250
+// 从localStorage读取登录状态
+const loadAuthState = () => {
+  const savedIsLoggedIn = localStorage.getItem('isLoggedIn');
+  const savedUser = localStorage.getItem('user');
+  
+  return {
+    isLoggedIn: savedIsLoggedIn === 'true',
+    user: savedUser ? JSON.parse(savedUser) : null
+  };
 };
 
-// 使用localStorage持久化存储
-const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      isLoggedIn: true,
-      user: initialUser,
-      token: 'dummy-token-123456',
-      
-      login: (userData, token) => {
-        set(() => ({
-          isLoggedIn: true,
-          user: userData,
-          token
-        }));
-      },
-      
-      logout: () => {
-        set(() => ({
-          isLoggedIn: false,
-          user: null,
-          token: null
-        }));
-      },
-      
-      updateUser: (userData) => {
-        set((state) => ({
-          user: state.user ? { ...state.user, ...userData } : null
-        }));
-      },
-      
-      updatePoints: (points) => {
-        set((state) => ({
-          user: state.user ? { ...state.user, points } : null
-        }));
-      }
-    }),
-    {
-      name: 'auth-storage', // localStorage key
-      getStorage: () => localStorage
-    }
-  )
-);
-
-export default useAuthStore;
+export const useAuthStore = create<AuthStore>((set) => ({
+  isOpen: false,
+  ...loadAuthState(), // 初始化时从localStorage加载状态
+  openAuthModal: () => set({ isOpen: true }),
+  closeAuthModal: () => set({ isOpen: false }),
+  login: (userData) => {
+    const user = userData || {
+      nickname: '188****8888',
+      id: '12345678',
+      points: 30,
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
+    };
+    
+    // 保存到localStorage
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('user', JSON.stringify(user));
+    
+    set({ 
+      isLoggedIn: true, 
+      user,
+      isOpen: false
+    });
+  },
+  logout: () => {
+    // 清除localStorage
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
+    
+    set({ isLoggedIn: false, user: null });
+  },
+}));
