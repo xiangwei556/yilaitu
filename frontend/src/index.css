@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased text-gray-900 bg-bg-page;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin-transparent::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .scrollbar-thin-transparent::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin-transparent::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  .scrollbar-thin-transparent:hover::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+  }
+  
+  .scrollbar-thin-transparent:hover::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* slate-400 */
+  }
+
+  /* Darker thin scrollbar for modal */
+  .scrollbar-thin-dark::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .scrollbar-thin-dark::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin-dark::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  /* Only show thumb on hover of the container */
+  .hover-scroll:hover .scrollbar-thin-dark::-webkit-scrollbar-thumb {
+    background: #d1d5db; /* gray-300 */
+  }
+  
+  .hover-scroll:hover .scrollbar-thin-dark::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af; /* gray-400 */
+  }
+}
