@@ -3,7 +3,7 @@ import { message } from 'antd';
 
 // Create axios instance
 const service = axios.create({
-  baseURL: 'http://localhost:8001/api/v1', // Adjust if needed
+  baseURL: process.env.REACT_APP_API_BASE_URL || '/api/v1', // 使用环境变量或相对路径
   timeout: 5000,
 });
 
