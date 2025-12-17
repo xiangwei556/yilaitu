@@ -1,0 +1,102 @@
+# Dependencies
+node_modules/
+package.json
+package-lock.json
+backend/__pycache__/
+backend/**/__pycache__/
+backend/venv/
+backend/env/
+frontend/node_modules/
+
+# IDE and project files
+.trae/
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Build output
+frontend/dist/
+frontend/.vite/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+backend/tos_error.log
+backend/logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads and data
+backend/uploads/
+backend/test_images/
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files and reports
+coverage/
+*.test.js.snap
+*.spec.js.snap
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Other
+nodejs.msi
+*.csv
+*.xlsx
+*.pyc
+*.pytest_cache/
+backend/开发提示词
+backend/用户信息.csv
+
+# Root-level test and utility scripts
+check_admin.py
+create_admin.py
+create_dirs.py
+create_frontend_dirs.py
+populate_test_data.py
+reset_admin_password.py
+test_admin_login.html
+test_admin_login.js
+test_admin_response.js
+test_api.py
+test_create_membership_order.py
+test_exception_rollback.py
+test_login.py
+test_login_fix.js
+test_redis.py
+test_register.py
+test_register_api.js
+test_wechat_login.js
+test_wechat_login_browser.js
+verify_ark_api_key.py
+verify_order.py
+
+# Browser console scripts
+browser_console_script.js
+browser_console_script_with_wechat_bind.js
+simple_console_script.txt
+
+# PowerShell scripts
+start_mcp_server.ps1
