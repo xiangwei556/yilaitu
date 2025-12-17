@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "check": "tsc -b --noEmit"
+    "check": "tsc -b --noEmit",
+    "deploy": "npm run build && cp -r dist/* /var/www/html/yilaitu/"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
