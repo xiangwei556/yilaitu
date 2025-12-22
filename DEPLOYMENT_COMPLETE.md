@@ -192,8 +192,8 @@ server {
     server_name www.yilaitu.com yilaitu.com;
 
     # SSL证书配置（执行Certbot后自动生成）
-    ssl_certificate /etc/letsencrypt/live/www.yilaitu.com/fullchain.pem;  # 完整证书链
-    ssl_certificate_key /etc/letsencrypt/live/www.yilaitu.com/privkey.pem;  # 私钥文件
+    ssl_certificate /etc/letsencrypt/live/www.yilaitu.com/yilaitu.com.pem;  # 完整证书链
+    ssl_certificate_key /etc/letsencrypt/live/www.yilaitu.com/yilaitu.com.key;  # 私钥文件
     include /etc/letsencrypt/options-ssl-nginx.conf;  # 推荐的SSL配置选项
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;  # Diffie-Hellman参数，增强安全性
 

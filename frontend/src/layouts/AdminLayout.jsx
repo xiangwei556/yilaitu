@@ -58,6 +58,14 @@ const AdminLayout = () => {
       ],
     },
     {
+      key: '/admin/yilaitumodel',
+      icon: <UserOutlined />,
+      label: '模特管理',
+      children: [
+        { key: '/admin/yilaitumodel/models', label: '模特列表' },
+      ],
+    },
+    {
       key: '/admin/orders',
       icon: <ShoppingCartOutlined />,
       label: '订单管理',
@@ -115,7 +123,7 @@ const AdminLayout = () => {
         <Content
           className="site-layout-background"
           style={{
-            margin: '24px 16px',
+            margin: '4px 4px',
             padding: 24,
             minHeight: 280,
             background: '#fff',

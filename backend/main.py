@@ -23,6 +23,9 @@ from backend.order.api.order import router as order_router
 from backend.notification.api.notification import router as notification_router
 from backend.config_center.api.config import router as config_center_router
 from backend.app.api.user_purchase import router as user_purchase_router
+from backend.yilaitumodel.api.model import router as yilaitumodel_router
+from fastapi.staticfiles import StaticFiles
+import os
 
 # Import original app modules
 from app.database import init_db
@@ -61,6 +64,12 @@ app.include_router(order_router, prefix=f"{settings.API_V1_STR}/order", tags=["O
 app.include_router(notification_router, prefix=f"{settings.API_V1_STR}/notification", tags=["Notification"])
 app.include_router(config_center_router, prefix=f"{settings.API_V1_STR}/config", tags=["Config"])
 app.include_router(user_purchase_router, prefix=f"{settings.API_V1_STR}/user-purchase", tags=["User Purchase"])
+app.include_router(yilaitumodel_router, prefix=f"{settings.API_V1_STR}/yilaitumodel", tags=["YiLaiTu Model"])
+
+# Static files for YiLaiTu Model images
+_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "yilaitumodel")
+if os.path.exists(_DATA_DIR):
+    app.mount(f"{settings.API_V1_STR}/yilaitumodel/files", StaticFiles(directory=_DATA_DIR), name="yilaitumodel-files")
 
 # Exception Handlers
 @app.exception_handler(CustomException)

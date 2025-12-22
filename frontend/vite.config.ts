@@ -27,4 +27,15 @@ export default defineConfig({
     }), 
     tsconfigPaths()
   ],
+  server: {
+    port: 80,
+    host: '0.0.0.0',
+    allowedHosts: ['yilaitu.com', '0.0.0.0', 'localhost'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+      }
+    }
+  }
 })

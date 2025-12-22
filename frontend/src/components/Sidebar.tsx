@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 
 const menuItems = [
@@ -12,34 +13,39 @@ const menuItems = [
   { icon: 'photo_size_select_large', label: '扩图', id: 'expand' },
   { icon: 'hd', label: '变清晰', id: 'clarify' },
   { icon: 'auto_fix_high', label: '万能改图', id: 'magic-edit' },
+  { icon: 'badge', label: '模特管理', id: 'model-management' },
   { icon: 'history', label: '生图记录', id: 'history' },
 ];
 
 export const Sidebar: React.FC = () => {
+  const location = useLocation();
+
   return (
     <div className="w-[200px] h-[calc(100vh-4rem)] bg-white border-r border-gray-100 flex flex-col fixed left-0 top-16 z-40">
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-3">
-          {menuItems.map((item) => (
+          {menuItems.map((item) => {
+            const isActive = location.pathname === (item.id === 'home' ? '/' : `/${item.id}`);
+            return (
             <li key={item.id}>
-              <a
-                href="#"
+              <Link
+                to={item.id === 'home' ? '/' : `/${item.id}`}
                 className={clsx(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                  item.active 
-                    ? "text-brand bg-brand-light/10 relative" 
+                  "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors relative",
+                  isActive 
+                    ? "text-[#4C3BFF] bg-[#4C3BFF]/10" 
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 )}
               >
-                {item.active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-brand rounded-r-full" />
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#4C3BFF] rounded-r-full" />
                 )}
                 <span className="material-icons-outlined text-[20px]">{item.icon}</span>
                 <span>{item.label}</span>
-              </a>
+              </Link>
             </li>
-          ))}
+          )})}
         </ul>
       </nav>
     </div>
