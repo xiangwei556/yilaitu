@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { ModelGeneration } from './pages/ModelGeneration';
+import MyModel from './components/MyModel';
 
 // @ts-ignore
 import LoginPage from './pages/LoginPage';
@@ -33,6 +34,11 @@ import OrderList from './pages/admin/order/OrderList';
 import NotificationConfig from './pages/admin/notification/NotificationConfig';
 // @ts-ignore
 import SystemConfig from './pages/admin/config_center/SystemConfig';
+// @ts-ignore
+import ModelList from './pages/admin/yilaitumodel/ModelList';
+// @ts-ignore
+import ModelForm from './pages/admin/yilaitumodel/ModelForm';
+
 
 import { AuthModal } from './components/AuthModal';
 
@@ -45,6 +51,12 @@ function App() {
         <Route path="/" element={
           <MainLayout>
             <ModelGeneration />
+          </MainLayout>
+        } />
+        
+        <Route path="/model-management" element={
+          <MainLayout>
+            <MyModel />
           </MainLayout>
         } />
         
@@ -68,6 +80,12 @@ function App() {
            <Route path="orders" element={<OrderList />} />
            <Route path="notifications" element={<NotificationConfig />} />
            <Route path="config" element={<SystemConfig />} />
+           
+           {/* YiLaiTu Model Management */}
+           <Route path="yilaitumodel/models" element={<ModelList />} />
+           <Route path="yilaitumodel/models/new" element={<ModelForm />} />
+           <Route path="yilaitumodel/models/:id/edit" element={<ModelForm />} />
+
 
            {/* Default redirect to dashboard */}
            <Route index element={<Dashboard />} />

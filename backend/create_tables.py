@@ -11,6 +11,7 @@ from backend.points.models import points
 from backend.order.models import order
 from backend.notification.models import notification
 from backend.config_center.models import config
+from backend.yilaitumodel.models import model as yilaitumodel_model
 
 def init_tables():
     print("Creating tables for new modules...")
