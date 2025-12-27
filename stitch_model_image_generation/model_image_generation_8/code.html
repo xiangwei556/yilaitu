@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>模特管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#3713EC",
+                        "background-light": "#F7F8FC",
+                        "background-dark": "#121212",
+                    },
+                    fontFamily: {
+                        display: ["Noto Sans SC", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                    },
+                    aspectRatio: {
+                        '3/4': '3 / 4',
+                    }
+                },
+            },
+        };
+    </script>
+<style>
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }.custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.3);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(156, 163, 175, 0.5);
+        }.modal-overlay {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+        .modal-content {
+            animation: scaleUp 0.2s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes scaleUp {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 h-screen overflow-hidden relative">
+<div class="flex flex-col h-full z-0">
+<header class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-30 relative flex-shrink-0">
+<div class="flex items-center space-x-2">
+<svg class="h-8 w-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<h1 class="text-xl font-bold text-gray-900 dark:text-white">衣来图</h1>
+</div>
+<div class="flex items-center space-x-4 text-sm font-medium text-gray-600 dark:text-gray-300">
+<div class="flex items-center space-x-6 mr-2">
+<a class="hover:text-primary transition-colors" href="#">联系客服</a>
+<a class="hover:text-primary transition-colors" href="#">帮助中心</a>
+<a class="hover:text-primary transition-colors" href="#">小程序</a>
+</div>
+<div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
+<div class="relative group ml-2">
+<button class="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative outline-none">
+<span class="material-symbols-outlined text-gray-600 dark:text-gray-300">notifications</span>
+<span class="absolute top-1.5 right-1.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-900"></span>
+</button>
+<div class="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
+<div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800 rounded-t-xl">
+<h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            消息中心
+                            <span class="bg-red-50 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full border border-red-100">5条未读</span>
+</h3>
+<span class="text-xs text-primary cursor-pointer hover:underline">全部已读</span>
+</div>
+<ul class="max-h-[400px] overflow-y-auto py-1">
+<li class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer flex items-start space-x-3 transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+<div class="h-2 w-2 mt-1.5 rounded-full bg-red-500 flex-shrink-0"></div>
+<div class="flex-1">
+<p class="text-sm font-medium text-gray-800 dark:text-gray-200">生图任务完成</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">您提交的“模特换装”任务已完成，点击查看详情。</p>
+<p class="text-[10px] text-gray-400 mt-1">10分钟前</p>
+</div>
+</li>
+<li class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer flex items-start space-x-3 transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+<div class="h-2 w-2 mt-1.5 rounded-full bg-red-500 flex-shrink-0"></div>
+<div class="flex-1">
+<p class="text-sm font-medium text-gray-800 dark:text-gray-200">会员即将到期</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">您的专业版会员将于3天后到期，请及时续费。</p>
+<p class="text-[10px] text-gray-400 mt-1">2小时前</p>
+</div>
+</li>
+<li class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer flex items-start space-x-3 transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+<div class="h-2 w-2 mt-1.5 rounded-full bg-red-500 flex-shrink-0"></div>
+<div class="flex-1">
+<p class="text-sm font-medium text-gray-800 dark:text-gray-200">新功能上线通知</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">“扩图”功能全新升级，支持更高分辨率输出。</p>
+<p class="text-[10px] text-gray-400 mt-1">昨天</p>
+</div>
+</li>
+<li class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer flex items-start space-x-3 transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+<div class="h-2 w-2 mt-1.5 rounded-full bg-red-500 flex-shrink-0"></div>
+<div class="flex-1">
+<p class="text-sm font-medium text-gray-800 dark:text-gray-200">系统维护公告</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">系统将于本周六凌晨2:00进行例行维护。</p>
+<p class="text-[10px] text-gray-400 mt-1">2天前</p>
+</div>
+</li>
+<li class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer flex items-start space-x-3 transition-colors">
+<div class="h-2 w-2 mt-1.5 rounded-full bg-red-500 flex-shrink-0"></div>
+<div class="flex-1">
+<p class="text-sm font-medium text-gray-800 dark:text-gray-200">积分变动提醒</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">您成功邀请好友，获得100积分奖励。</p>
+<p class="text-[10px] text-gray-400 mt-1">3天前</p>
+</div>
+</li>
+</ul>
+<div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl text-center">
+<a class="text-xs font-medium text-primary hover:text-primary/80 flex items-center justify-center group/more" href="#">
+                            查看更多
+                            <span class="material-symbols-outlined text-sm ml-1 transform group-hover/more:translate-x-0.5 transition-transform">chevron_right</span>
+</a>
+</div>
+</div>
+</div>
+<div class="flex items-center bg-primary/5 dark:bg-primary/20 rounded-full pl-5 pr-1 py-1 border border-primary/10 dark:border-primary/30 ml-3">
+<div class="flex items-center mr-3 gap-1.5">
+<span class="material-symbols-outlined text-[20px] text-yellow-500 drop-shadow-sm">monetization_on</span>
+<div class="flex flex-col items-start leading-none justify-center">
+<span class="text-[10px] text-primary/70 dark:text-primary/60 font-medium mb-0.5">我的积分</span>
+<span class="text-sm font-bold text-primary dark:text-primary-300">1,250</span>
+</div>
+</div>
+<a class="px-4 py-2 text-xs font-bold text-white bg-primary rounded-full shadow-md shadow-primary/20 hover:bg-primary/90 hover:shadow-primary/30 transition-all flex items-center" href="#">
+<span class="material-symbols-outlined text-sm mr-1">diamond</span>
+                    开通会员
+                </a>
+</div>
+<div class="ml-3">
+<button class="flex items-center justify-center w-9 h-9 rounded-full ring-2 ring-gray-100 dark:ring-gray-700 hover:ring-primary/30 transition-all overflow-hidden focus:outline-none group">
+<img alt="User Avatar" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8yBPT0ZRKatvwk4PbtsuE2E1pa_aKPg7O7xr9K4g6cbvyyl5SKkslyELO6z7OjkmJo6uptCrevDiBdCvqqs8FtI0GwqV4U4PtJ1YnHt5WuBmzh1PQfwVjU4h1BFNhutdVLXvkj__QCVBEZr0afyj4cQjlkMimslZK2Po5Q7MmHjrReFOwuQ-ANUTP6VP74DyYrPD26NwzrBwcI0kmQcHz6pcDspZGdpVYaIIxxHDzkB6nWYXjzGV0PK6P_-qJQJfTmOJvcwE7hI_1"/>
+</button>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<aside class="w-60 bg-white dark:bg-gray-900 p-4 flex flex-col justify-between flex-shrink-0">
+<nav class="flex flex-col space-y-2">
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">home</span>
+                    首页
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">auto_awesome</span>
+                    模特图生成
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">texture</span>
+                    白底图生成
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">swap_horiz</span>
+                    模特换装
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">face_retouching_natural</span>
+                    模特换脸
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">accessibility_new</span>
+                    姿势裂变
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">color_lens</span>
+                    服装换色
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">photo_size_select_large</span>
+                    扩图
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">hd</span>
+                    变清晰
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">auto_fix_high</span>
+                    万能改图
+                </a>
+<a class="flex items-center px-4 py-3 bg-primary/10 text-primary rounded-lg font-semibold" href="#">
+<span class="material-symbols-outlined mr-3">badge</span>
+                    模特管理
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">history</span>
+                    生图记录
+                </a>
+</nav>
+<div class="pt-4 border-t border-gray-200 dark:border-gray-700"></div>
+</aside>
+<main class="flex-1 flex flex-col bg-background-light dark:bg-background-dark p-6 overflow-hidden">
+<div class="flex-shrink-0 flex flex-col gap-4 mb-4">
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">模特管理</h2>
+<div class="flex bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm border border-gray-200 dark:border-gray-700">
+<button class="px-6 py-2 rounded-full text-sm font-medium bg-primary text-white shadow-sm transition-all focus:outline-none">
+                            我的模特
+                        </button>
+<button class="px-6 py-2 rounded-full text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all focus:outline-none">
+                            系统模特
+                        </button>
+</div>
+</div>
+<div class="flex items-center justify-between px-4 py-3 bg-primary/5 dark:bg-primary/10 border border-primary/10 dark:border-primary/20 rounded-xl">
+<div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-primary mr-2.5 text-[20px]">info</span>
+<span>管理您的专属模特资源库，支持上传自定义模特或使用系统模特，为商品图生成提供丰富素材。</span>
+</div>
+<a class="text-sm font-medium text-primary hover:text-primary/80 flex items-center transition-colors cursor-pointer group/link ml-4 whitespace-nowrap" href="#">
+                        查看详细介绍
+                        <span class="material-symbols-outlined text-sm ml-0.5 transform group-hover/link:translate-x-0.5 transition-transform">chevron_right</span>
+</a>
+</div>
+</div>
+<div class="flex-1 bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-6 overflow-y-auto custom-scrollbar min-h-0">
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+<div class="group border-2 border-dashed border-primary/30 dark:border-primary/20 rounded-2xl aspect-[3/4] flex flex-col items-center justify-center cursor-pointer hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors relative">
+<div class="h-14 w-14 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-primary text-3xl">add</span>
+</div>
+<span class="text-primary font-medium text-sm">添加我的模特</span>
+</div>
+<div class="relative rounded-2xl overflow-hidden group aspect-[3/4] shadow-sm hover:shadow-md transition-shadow">
+<img alt="Model 1" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBBWee5XJU3NfGHSrlQMvTy_wQiHz3hiKYRU__m0_2YdDto-Udsmhg7OreW1ggLP36NHjnOeiqxUC3lIg1-6FfgCh5U9nydgK_m9GlUD-ozH8RbcDaHXorPkmeO1qINfiBA5wkMunBEKVSPxcttUKQU7N_5LP1-9xc17AoSXumxl5mewBD6SnpNuXgffBoZ9uz7C5sQgly2KvHBJZ9tsFMVIuxRCr94ymZYcTL6VAcSaBKnNCCuRyI6kAfYv_KYNnrynmVAXaa3aSf"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+<div class="absolute bottom-4 left-4 text-white">
+<div class="flex items-center space-x-2 text-xs opacity-90 mb-1">
+<span class="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-[10px]">体型 标准</span>
+</div>
+<div class="flex items-center space-x-2 text-xs opacity-90">
+<span class="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-[10px]">风格 欧美</span>
+</div>
+</div>
+</div>
+<div class="relative rounded-2xl overflow-hidden group aspect-[3/4] shadow-sm hover:shadow-md transition-shadow">
+<img alt="Model 2" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXQ4WKCL9u82oUmzL03r-1D81Xm2NZ5abWXlIWo5YtE0xzHVck4a_fd59tzaCjbI9SFap8RRhY69vT94FJr0gJH7xSABRzObrtVYl7lboi0omei-64qLusxqf8Swz4uhwt2INSrw7LXbUZ2xI3kgg-6g6sXbYWGIfHgyjQlU3CWgV0C67Ni9PKEOD2Doubm8gW0exfwaMcNdrfosTcMAom0YEPTtLLB20t4fd3_VICUkTpukDRaepbZAxWJI2JJiypY9oBmTmaqR2u"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+<div class="absolute bottom-4 left-4 text-white">
+<div class="flex items-center space-x-2 text-xs opacity-90 mb-1">
+<span class="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-[10px]">体型 娇小</span>
+</div>
+<div class="flex items-center space-x-2 text-xs opacity-90">
+<span class="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-[10px]">风格 日韩</span>
+</div>
+</div>
+</div>
+<div class="relative rounded-2xl overflow-hidden group aspect-[3/4] shadow-sm hover:shadow-md transition-shadow">
+<img alt="Model 3" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiTuau-KSX7rZn3GkNMp9JGj5DPTjKjXrroKrvSevZ2X9jt3vgrsZWA9kRWcfkXfn3UCrBVm8aI6dCH013_nbMMqnue5zczWBaZMnzdA1V86XsBBEYJqQVsY90qYCKlRYp0gyrYgSqx6gW9oBw9hM5NUTbniQwAsYb-IbDO4U_iQZohteHWRroTi4WmK5sxzl03-rUimslcBdfceboTNIdM0CBtvh9pbZZBQEOSoXTcNKsipPVAI042u1kY4rbJx3P-gcVGRXA_6q4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+<div class="absolute bottom-4 left-4 text-white">
+<div class="flex items-center space-x-2 text-xs opacity-90 mb-1">
+<span class="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-[10px]">体型 高挑</span>
+</div>
+<div class="flex items-center space-x-2 text-xs opacity-90">
+<span class="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-[10px]">风格 街拍</span>
+</div>
+</div>
+</div>
+<div class="relative rounded-2xl overflow-hidden group aspect-[3/4] shadow-sm hover:shadow-md transition-shadow">
+<img alt="Model 4" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmFx42Z3dUvpkrX5GFR0ndn4qcJ24cYSJO4yFa0LblWvA-Fcdi7IXSArSaqS4T6lpQugEjGYowMs-eRlouG3OuWXCJzVmEsiZeSyl6ae5XNDMRnhP-pS22t7mybWzugk1rrPcLOJxP89Tqi3X1eTa65y7T0j-XnwEEcOxYR-Kv3w9v7Y8wZZVTotoZEj0NyNkoXtDKAEjbYdwjxTmz-W0SDEEOwlU52oaCc-1gs6-AnteAGrRpK9YMJY0xINPGgGGHQCSA8H0hM-AV"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+<div class="absolute bottom-4 left-4 text-white">
+<div class="flex items-center space-x-2 text-xs opacity-90 mb-1">
+<span class="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-[10px]">体型 运动</span>
+</div>
+<div class="flex items-center space-x-2 text-xs opacity-90">
+<span class="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-[10px]">风格 活力</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm modal-overlay" id="modelInfoModal">
+<div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-[720px] max-h-[90vh] overflow-hidden flex flex-col md:flex-row modal-content relative">
+<button class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" onclick="document.getElementById('modelInfoModal').style.display='none'">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+<div class="w-full md:w-5/12 bg-gray-50 dark:bg-gray-900 flex-shrink-0 relative overflow-hidden h-[400px] md:h-auto">
+<img alt="Model Detail" class="w-full h-full object-cover object-top" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBBWee5XJU3NfGHSrlQMvTy_wQiHz3hiKYRU__m0_2YdDto-Udsmhg7OreW1ggLP36NHjnOeiqxUC3lIg1-6FfgCh5U9nydgK_m9GlUD-ozH8RbcDaHXorPkmeO1qINfiBA5wkMunBEKVSPxcttUKQU7N_5LP1-9xc17AoSXumxl5mewBD6SnpNuXgffBoZ9uz7C5sQgly2KvHBJZ9tsFMVIuxRCr94ymZYcTL6VAcSaBKnNCCuRyI6kAfYv_KYNnrynmVAXaa3aSf"/>
+</div>
+<div class="flex-1 p-6 md:p-8 flex flex-col h-full overflow-y-auto custom-scrollbar">
+<h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-8">模特信息</h3>
+<div class="space-y-6 flex-1">
+<div class="grid grid-cols-1 gap-6">
+<div>
+<span class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">性别</span>
+<p class="text-base font-semibold text-gray-900 dark:text-gray-100">女</p>
+</div>
+<div>
+<span class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">年龄分段</span>
+<p class="text-base font-semibold text-gray-900 dark:text-gray-100">青年 (20-30岁)</p>
+</div>
+<div>
+<span class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">体型</span>
+<p class="text-base font-semibold text-gray-900 dark:text-gray-100">标准</p>
+</div>
+<div>
+<span class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">风格</span>
+<p class="text-base font-semibold text-gray-900 dark:text-gray-100">欧美</p>
+</div>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 flex gap-4">
+<button class="flex-1 py-2.5 px-4 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-full font-medium text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">
+                    删除模特
+                </button>
+<button class="flex-1 py-2.5 px-4 bg-primary text-white rounded-full font-medium text-sm hover:bg-primary/90 transition-colors shadow-sm hover:shadow-primary/30 flex items-center justify-center">
+                     编辑模特信息
+                </button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

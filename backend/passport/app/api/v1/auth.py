@@ -9,6 +9,7 @@ from backend.passport.app.services.captcha_service import captcha_service
 from backend.passport.app.services.wechat_service import wechat_service
 from backend.passport.app.api.deps import get_current_user, oauth2_scheme
 from backend.passport.app.models.user import User
+from backend.passport.app.core.exceptions import AuthenticationError
 
 router = APIRouter()
 

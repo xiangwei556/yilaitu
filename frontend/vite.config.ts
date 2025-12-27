@@ -11,9 +11,9 @@ export default defineConfig({
   plugins: [
     react({
       babel: {
-        plugins: [
-          'react-dev-locator',
-        ],
+        // plugins: [
+        //   'react-dev-locator',
+        // ],
       },
     }),
     traeBadgePlugin({
@@ -35,6 +35,10 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8001',
         changeOrigin: true,
+        // Add WebSocket support for proxy
+        ws: true,
+        // Support rewrite if needed
+        rewrite: (path) => path
       }
     }
   }

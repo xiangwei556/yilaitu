@@ -49,26 +49,39 @@ export const AuthModal: React.FC = () => {
     }
 
     try {
+      // 清除旧的 localStorage 数据
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
+      
       // 调用登录接口
       const response = await request.post('/auth/login/phone', {
         phone,
         code
-      }) as { access_token: string };
+      });
 
       // 保存token到localStorage
       localStorage.setItem('token', response.access_token);
- // 模拟登录成功，实际项目中这里会调用后端接口
-      // const response = await request.post('/auth/login/phone', { phone, code });
+      localStorage.setItem('refresh_token', response.refresh_token || '');
       
-      // 更新全局登录状态
-      // 这里根据用户输入的手机号设置昵称，如果是特定手机号 13401022282 则使用特定ID
-      const isTestUser = phone === '13401022282';
-      login({
-        nickname: phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),
-        id: isTestUser ? '12345678' : Math.floor(Math.random() * 100000000).toString(),
-        points: isTestUser ? 30 : 0,
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
-      });
+      // 使用后端返回的用户信息
+      const userData = response.user || {};
+      
+      // 验证 user.id 是否存在
+      if (!userData.id) {
+        setErrors(prev => ({ ...prev, general: '登录失败：用户数据异常' }));
+        return;
+      }
+      
+      const loginUserData = {
+        nickname: userData.nickname || phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),
+        id: userData.id.toString(),
+        points: userData.points || 0,
+        avatar: userData.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
+      };
+      
+      login(loginUserData);
       
       // 显示登录成功消息
       message.success('登录成功');

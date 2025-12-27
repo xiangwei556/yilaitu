@@ -12,6 +12,8 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8001',
         changeOrigin: true,
+        // Add WebSocket support for proxy
+        ws: true,
         rewrite: (path) => path
       }
     }

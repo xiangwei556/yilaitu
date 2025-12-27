@@ -1,17 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ImagePlus, ChevronDown, Coins, Upload, X, Star } from 'lucide-react';
 import clsx from 'clsx';
+import { getMyModels, getSystemModels } from '../../api/yilaitumodel';
+import AddModelModal from '../AddModelModal';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 // Data Mockups - Expanded to 20+ items
-const generateModels = (type: 'adult' | 'child', count: number) => {
+const generateModels = (type: 'adult' | 'system', count: number) => {
   return Array.from({ length: count }, (_, i) => ({
     id: type === 'adult' ? i + 1 : i + 101,
-    image: `https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=${type === 'adult' ? 'fashion model portrait' : 'child fashion model'} pose ${i + 1}&image_size=portrait_3_4`
+    image: `https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=${type === 'adult' ? 'fashion model portrait' : 'system fashion model'} pose ${i + 1}&image_size=portrait_3_4`
   }));
 };
 
 const adultModels = generateModels('adult', 25);
-const childModels = generateModels('child', 25);
+
 
 const styleSets = {
   daily: Array.from({ length: 20 }, (_, i) => ({
@@ -34,8 +37,21 @@ const styleSets = {
 
 
 export const LeftPanel: React.FC = () => {
+  const { isLoggedIn, user, openAuthModal } = useAuthStore();
   const [version, setVersion] = useState<'common' | 'pro'>('common');
-  const [modelType, setModelType] = useState<'adult' | 'child'>('adult');
+  const [outfitType, setOutfitType] = useState<'single' | 'match'>('single');
+  const [modelType, setModelType] = useState<'adult' | 'system' | 'my'>('adult');
+  const [userMyModels, setUserMyModels] = useState<Array<{id: number, avatar?: string, images?: Array<{file_path: string}>}>>([]);
+  const [visibleMyModels, setVisibleMyModels] = useState<Array<{id: number, avatar?: string, images?: Array<{file_path: string}>}>>([]);
+  const [allMyModels, setAllMyModels] = useState<Array<{id: number, avatar?: string, images?: Array<{file_path: string}>}>>([]);
+  const [myModelsLoading, setMyModelsLoading] = useState(false);
+  // System models state
+  const [systemModels, setSystemModels] = useState<Array<{id: number, avatar?: string, images?: Array<{file_path: string}>}>>([]);
+  const [visibleSystemModels, setVisibleSystemModels] = useState<Array<{id: number, avatar?: string, images?: Array<{file_path: string}>}>>([]);
+  const [systemModelsLoading, setSystemModelsLoading] = useState(false);
+  // API call tracking
+  const [hasCalledSystemModelsAPI, setHasCalledSystemModelsAPI] = useState(false);
+  const [hasCalledMyModelsAPI, setHasCalledMyModelsAPI] = useState(false);
   const [selectedModel, setSelectedModel] = useState<number>(1);
   const [styleCategory, setStyleCategory] = useState('daily');
   const [selectedStyle, setSelectedStyle] = useState<number>(1);
@@ -44,10 +60,26 @@ export const LeftPanel: React.FC = () => {
   
   // Upload State
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [singleOutfitImage, setSingleOutfitImage] = useState<string | null>(null);
+  const [singleOutfitBackImage, setSingleOutfitBackImage] = useState<string | null>(null);
+  const [topOutfitImage, setTopOutfitImage] = useState<string | null>(null);
+  const [topOutfitBackImage, setTopOutfitBackImage] = useState<string | null>(null);
+  const [bottomOutfitImage, setBottomOutfitImage] = useState<string | null>(null);
+  const [bottomOutfitBackImage, setBottomOutfitBackImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const singleOutfitFileInputRef = useRef<HTMLInputElement>(null);
+  const singleOutfitBackFileInputRef = useRef<HTMLInputElement>(null);
+  const topOutfitFileInputRef = useRef<HTMLInputElement>(null);
+  const topOutfitBackFileInputRef = useRef<HTMLInputElement>(null);
+  const bottomOutfitFileInputRef = useRef<HTMLInputElement>(null);
+  const bottomOutfitBackFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Track previous login state
+  const wasLoggedIn = useRef(isLoggedIn);
 
   // Modal State
   const [showMoreModal, setShowMoreModal] = useState(false);
+  const [addModelModalVisible, setAddModelModalVisible] = useState(false);
   const [hoveredModelId, setHoveredModelId] = useState<number | null>(null);
   const [modalPreviewPos, setModalPreviewPos] = useState({ top: 0, arrowTop: 0 });
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -58,6 +90,9 @@ export const LeftPanel: React.FC = () => {
   const [mainPreviewPos, setMainPreviewPos] = useState({ top: 0, arrowTop: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const [showStyleModal, setShowStyleModal] = useState(false);
+  const [showCustomSceneInput, setShowCustomSceneInput] = useState(false);
+  const [customSceneText, setCustomSceneText] = useState('');
+  const [customSceneDisabled, setCustomSceneDisabled] = useState(false);
   const [styleHoveredId, setStyleHoveredId] = useState<number | null>(null);
   const stylePopoverRef = useRef<HTMLDivElement>(null);
   const styleModalGridRef = useRef<HTMLDivElement>(null);
@@ -67,7 +102,7 @@ export const LeftPanel: React.FC = () => {
   
   // Dynamic Model Lists
   const [currentAdultModels, setCurrentAdultModels] = useState(adultModels.slice(0, 5));
-  const [currentChildModels, setCurrentChildModels] = useState(childModels.slice(0, 5));
+  
   const [currentDailyStyles, setCurrentDailyStyles] = useState(styleSets.daily.slice(0, 5));
   const [currentMagazineStyles, setCurrentMagazineStyles] = useState(styleSets.magazine.slice(0, 5));
   const [currentSportStyles, setCurrentSportStyles] = useState(styleSets.sport.slice(0, 5));
@@ -103,6 +138,24 @@ export const LeftPanel: React.FC = () => {
     };
   }, [showStyleModal]);
 
+  // Clear my models data when user logs out
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUserMyModels([]);
+      setVisibleMyModels([]);
+      setAllMyModels([]);
+      setHasCalledMyModelsAPI(false);
+    }
+  }, [isLoggedIn]);
+
+  // Fetch my models when user logs in and is on "我的模特" tab
+  useEffect(() => {
+    if (isLoggedIn && wasLoggedIn.current === false && modelType === 'my' && (!hasCalledMyModelsAPI || allMyModels.length === 0)) {
+      fetchMyModels(1, 12);
+    }
+    wasLoggedIn.current = isLoggedIn;
+  }, [isLoggedIn, modelType, hasCalledMyModelsAPI, allMyModels.length]);
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -118,33 +171,90 @@ export const LeftPanel: React.FC = () => {
     }
   };
 
-  const handleModelSelect = (id: number, isAdult: boolean) => {
+  const handleModelSelect = (id: number, isAdult: boolean | null = null) => {
     setSelectedModel(id);
-    const fullList = isAdult ? adultModels : childModels;
-    const model = fullList.find(m => m.id === id);
     
-    if (model) {
-      const currentList = isAdult ? currentAdultModels : currentChildModels;
-      const setList = isAdult ? setCurrentAdultModels : setCurrentChildModels;
+    // Handle my models separately
+    if (modelType === 'my') {
+      if (!isLoggedIn) {
+        return;
+      }
       
-      const isVisible = currentList.slice(0, 5).find(m => m.id === id);
+      // Find model from all loaded models
+      const model = allMyModels.find(m => m.id === id);
+      
+      if (model) {
+        // Check if model is already in visible models
+        const isVisible = visibleMyModels.find(m => m.id === id);
 
-      if (isVisible) {
-        // Restore logic: Reset list to default top 5
-        setList(fullList.slice(0, 5));
-      } else {
-        // Replace first image logic
-        const newList = [...currentList];
-        newList[0] = model; // Replace index 0
-        setList(newList);
+        if (isVisible) {
+          // Model is already visible, no need to change anything
+          // Just refresh the visible models from all models
+          const newVisibleModels = allMyModels.slice(0, 4);
+          setVisibleMyModels(newVisibleModels);
+        } else {
+          // Model is not in visible models, replace the first one
+          // Create new visible models array with the selected model at index 0
+          const newVisibleModels = [model, ...allMyModels.slice(1, 5)];
+          setVisibleMyModels(newVisibleModels.slice(0, 4));
+        }
+      }
+      // Don't close the modal after selection
+      return;
+    }
+    
+    // Handle system models separately
+    if (modelType === 'system') {
+      // Find model from all loaded system models
+      const model = systemModels.find(m => m.id === id);
+      
+      if (model) {
+        // Check if model is already in visible system models
+        const isVisible = visibleSystemModels.find(m => m.id === id);
+
+        if (isVisible) {
+          // Model is already visible, no need to change anything
+          // Just refresh the visible models from all system models
+          const newVisibleModels = systemModels.slice(0, 5);
+          setVisibleSystemModels(newVisibleModels);
+        } else {
+          // Model is not in visible models, replace the first one
+          // Create new visible models array with the selected model at index 0
+          const newVisibleModels = [model, ...systemModels.slice(1, 5)];
+          setVisibleSystemModels(newVisibleModels);
+        }
+      }
+      // Don't close the modal after selection
+      return;
+    }
+    
+    // Original logic for adult models
+    if (isAdult !== null) {
+      const fullList = adultModels;
+      const model = fullList.find(m => m.id === id);
+      
+      if (model) {
+        const currentList = currentAdultModels;
+        const setList = setCurrentAdultModels;
+        
+        const isVisible = currentList.slice(0, 5).find(m => m.id === id);
+
+        if (isVisible) {
+          // Restore logic: Reset list to default top 5
+          setList(fullList.slice(0, 5));
+        } else {
+          // Replace first image logic
+          const newList = [...currentList];
+          newList[0] = model; // Replace index 0
+          setList(newList);
+        }
       }
     }
+    // Don't close the modal after selection
   };
 
   // Main List Hover Handler
-  const handleMainHover = (e: React.MouseEvent<HTMLDivElement>, id: number | null) => {
-    if (showMoreModal) return; // Do nothing if modal is open
-
+  const handleMainHover = (_: React.MouseEvent<HTMLDivElement> | null, id: number | null) => {
     if (id === null) {
       setMainHoveredId(null);
       return;
@@ -152,31 +262,154 @@ export const LeftPanel: React.FC = () => {
 
     setMainHoveredId(id);
     if (containerRef.current) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
-      
-      // Calculate position relative to container
-      const itemTop = rect.top - containerRect.top;
-      const arrowTop = itemTop + rect.height / 2;
-      const previewHeight = 400;
-      let top = arrowTop - previewHeight / 2;
-      
-      // Constraints
-      const containerHeight = containerRef.current.offsetHeight;
-      if (top < 0) top = 0;
-      if (top + previewHeight > containerHeight) {
-        top = containerHeight - previewHeight;
-      }
+      // Use id-based positioning instead of event target
+      const modelElement = document.getElementById(`main-model-item-${id}`);
+      if (modelElement) {
+        const rect = modelElement.getBoundingClientRect();
+        const containerRect = containerRef.current.getBoundingClientRect();
+        
+        // Calculate position relative to container
+        const itemTop = rect.top - containerRect.top;
+        const arrowTop = itemTop + rect.height / 2;
+        const previewHeight = 400;
+        let top = arrowTop - previewHeight / 2;
+        
+        // Constraints
+        const containerHeight = containerRef.current.offsetHeight;
+        if (top < 0) top = 0;
+        if (top + previewHeight > containerHeight) {
+          top = containerHeight - previewHeight;
+        }
 
-      setMainPreviewPos({
-        top,
-        arrowTop: arrowTop - top // Relative to preview box
-      });
+        setMainPreviewPos({
+          top,
+          arrowTop: arrowTop - top // Relative to preview box
+        });
+      }
     }
   };
 
-  const displayedModels = modelType === 'adult' ? currentAdultModels : currentChildModels;
-  const modalModels = modelType === 'adult' ? adultModels : childModels;
+  // Function to get my models from API
+  const fetchMyModels = async (page: number = 1, limit: number = 12) => {
+    if (!isLoggedIn || !user) {
+      return;
+    }
+    
+    setMyModelsLoading(true);
+    try {
+      // Calculate skip based on page and limit
+      const skip = (page - 1) * limit;
+      
+      // Use actual API call
+      const response = await getMyModels({ skip, page_size: limit }) as any;
+      
+      // Ensure we're storing all model data including the id returned by the backend
+      const modelsWithId = response.items.map((model: any) => ({
+        ...model,
+        // Ensure id is properly preserved
+        id: model.id
+      }));
+      
+      if (page === 1) {
+        // First page: set both visible and all models
+        setAllMyModels(modelsWithId);
+        setVisibleMyModels(modelsWithId.slice(0, 4));
+        setUserMyModels(modelsWithId.slice(0, 4));
+      } else {
+        // Subsequent pages: add to all models only, preserving all ids
+        // Filter out duplicate models by id to avoid duplicates
+        setAllMyModels(prev => {
+          const existingIds = new Set(prev.map(model => model.id));
+          const newUniqueModels = modelsWithId.filter(model => !existingIds.has(model.id));
+          return [...prev, ...newUniqueModels];
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch my models:', error);
+      // In real app, show proper error message
+    } finally {
+      setMyModelsLoading(false);
+      // Update API call tracking state
+      setHasCalledMyModelsAPI(true);
+    }
+  };
+
+  // Function to get system models from API
+  const fetchSystemModels = async (page: number = 1, limit: number = 12) => {
+    setSystemModelsLoading(true);
+    try {
+      // Calculate skip based on page and limit
+      const skip = (page - 1) * limit;
+      
+      // Use actual API call - no need for user_id, type=system is added in the API function
+      const response = await getSystemModels({ skip, page_size: limit }) as any;
+      
+      // Ensure we're storing all model data including the id returned by the backend
+      const modelsWithId = response.items.map((model: any) => ({
+        ...model,
+        // Ensure id is properly preserved
+        id: model.id
+      }));
+      
+      if (page === 1) {
+        // First page: set both visible and all system models
+        setSystemModels(modelsWithId);
+        setVisibleSystemModels(modelsWithId.slice(0, 5));
+      } else {
+        // Subsequent pages: add to all system models only, preserving all ids
+        // Filter out duplicate models by id to avoid duplicates
+        setSystemModels(prev => {
+          const existingIds = new Set(prev.map(model => model.id));
+          const newUniqueModels = modelsWithId.filter(model => !existingIds.has(model.id));
+          return [...prev, ...newUniqueModels];
+        });
+      }
+      // Update API call tracking state
+      setHasCalledSystemModelsAPI(true);
+    } catch (error) {
+      console.error('Failed to fetch system models:', error);
+      // In real app, show proper error message
+    } finally {
+      setSystemModelsLoading(false);
+    }
+  };
+
+  // Handle my models button click
+  const handleMyModelsClick = () => {
+    setModelType('my');
+    
+    if (!isLoggedIn) {
+      openAuthModal();
+      return;
+    }
+    
+    // Only call API if:
+    // 1. We haven't called it before, OR
+    // 2. We called it before but got 0 models
+    if (!hasCalledMyModelsAPI || allMyModels.length === 0) {
+      fetchMyModels(1, 12); // Use consistent limit of 12 to avoid duplicate IDs
+    }
+  };
+
+  // Handle successful model addition
+  const handleModelAdded = () => {
+    // Refresh my models list
+    fetchMyModels(1, 12);
+  };
+
+  // Displayed models logic
+  const displayedModels = modelType === 'adult' 
+    ? currentAdultModels 
+    : modelType === 'system' 
+    ? visibleSystemModels 
+    : visibleMyModels;
+  
+  const modalModels = modelType === 'adult' 
+    ? adultModels 
+    : modelType === 'system' 
+    ? systemModels 
+    : allMyModels;
+  
   const currentStyles =
     styleCategory === 'daily'
       ? currentDailyStyles
@@ -196,128 +429,549 @@ export const LeftPanel: React.FC = () => {
   const previewModel = modalModels.find(m => m.id === previewModelId);
 
   // Main List Preview Logic
-  const mainPreviewModel = (modelType === 'adult' ? adultModels : childModels).find(m => m.id === mainHoveredId);
+  const mainPreviewModel = modelType === 'my' 
+    ? allMyModels.find(m => m.id === mainHoveredId)
+    : modelType === 'system' 
+    ? systemModels.find(m => m.id === mainHoveredId)
+    : adultModels.find(m => m.id === mainHoveredId);
   const styleMainPreviewModel = currentStyles.find(s => s.id === styleMainHoveredId);
+
+  const getModalTitle = () => {
+    switch (modelType) {
+      case 'adult':
+        return '随机模特';
+      case 'system':
+        return '系统模特';
+      case 'my':
+        return '我的模特';
+      default:
+        return '姿势';
+    }
+  };
+
+  const handleGenerate = () => {
+    console.log('=== 开始生成 - 用户选择的数据 ===');
+    console.log('版本:', version,version === 'common' ? '通用版' : '专业版');
+    console.log('服饰类型:', outfitType,outfitType === 'single' ? '单件' : '搭配');
+    console.log('模特类型:', modelType,modelType === 'adult' ? '随机模特' : modelType === 'system' ? '系统模特' : '我的模特');
+    console.log('选中的模特ID:',selectedModel);
+    console.log('风格场景:', styleCategory,styleCategory === 'daily' ? '日常生活风' : styleCategory === 'magazine' ? '时尚杂志风' : '运动活力风');
+    console.log('选中的风格ID:', selectedStyle);
+    console.log('自定义场景描述:', customSceneText || '无');
+    console.log('图片比例:', ratio);
+    console.log('图片数量:', quantity);
+    
+    if (version === 'common') {
+      console.log('服饰图片:', uploadedImage ? '已上传' : '未上传');
+    } else {
+      if (outfitType === 'single') {
+        console.log('单件服饰正面:', singleOutfitImage ? '已上传' : '未上传');
+        console.log('单件服饰背面:', singleOutfitBackImage ? '已上传' : '未上传');
+      } else {
+        console.log('上装正面:', topOutfitImage ? '已上传' : '未上传');
+        console.log('上装背面:', topOutfitBackImage ? '已上传' : '未上传');
+        console.log('下装正面:', bottomOutfitImage ? '已上传' : '未上传');
+        console.log('下装背面:', bottomOutfitBackImage ? '已上传' : '未上传');
+      }
+    }
+    console.log('====================================');
+  };
 
   // 预览位置改为基于悬停项的真实几何计算
 
   return (
     <div 
       ref={containerRef}
-      className="w-[450px] flex-shrink-0 bg-white shadow-sm flex flex-col relative ml-[1px]" 
-      style={{ maxHeight: 'calc(100vh - 85px)', marginTop: '1px' }}
+      className="w-[450px] flex-shrink-0 bg-white shadow-sm flex flex-col relative" 
+      style={{ maxHeight: 'calc(100vh - 56px)', marginTop: '0' }}
     >
       <div className="overflow-y-auto scrollbar-thin-transparent flex-1">
-        <div className="p-6 pb-0 space-y-6">
+        <div className="pt-3 pb-0 px-6 space-y-6">
           <h1 className="text-lg font-semibold text-gray-800 mb-6">模特图生成</h1>
 
           {/* Version Toggle */}
-          <div className="bg-gray-100 p-1 rounded-full flex w-full">
+          <div className="bg-gray-100 p-1 rounded-full flex text-sm w-full">
             <button
               onClick={() => setVersion('common')}
               className={clsx(
-                "flex-1 py-2 text-sm font-medium rounded-full transition-all",
-                version === 'common' ? "bg-white text-brand shadow-sm" : "text-gray-500 hover:text-gray-700"
+                "flex-1 text-center py-1.5 rounded-full transition-all",
+                version === 'common' ? "bg-white text-[#3713ec] font-medium shadow-sm" : "text-[#64748B] hover:text-[#334155]"
               )}
             >
               通用版
             </button>
             <button
-              onClick={() => setVersion('pro')}
+              onClick={() => {
+                setVersion('pro');
+                setOutfitType('single');
+              }}
               className={clsx(
-                "flex-1 py-2 text-sm font-medium rounded-full transition-all",
-                version === 'pro' ? "bg-white text-brand shadow-sm" : "text-gray-500 hover:text-gray-700"
+                "flex-1 flex items-center justify-center gap-1 py-1.5 rounded-full transition-all",
+                version === 'pro' ? "bg-white text-[#3713ec] font-medium shadow-sm" : "text-[#64748B] hover:text-[#334155]"
               )}
             >
               专业版
+              <span className="material-symbols-outlined text-amber-500 text-[18px]">diamond</span>
             </button>
           </div>
 
-          {/* Upload Area */}
-          <div>
-            <input 
-              type="file" 
-              ref={fileInputRef}
-              className="hidden"
-              accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff,.gif"
-              onChange={handleFileUpload}
-            />
-            
-            {!uploadedImage ? (
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50 h-32 flex flex-col items-center justify-center cursor-pointer hover:border-brand hover:bg-brand-light/5 transition-colors group"
-              >
-                <div className="w-10 h-10 bg-brand/10 rounded-full flex items-center justify-center mb-2 group-hover:bg-brand/20 transition-colors">
-                  <ImagePlus className="w-5 h-5 text-brand" />
-                </div>
-                <p className="text-gray-900 font-bold mb-1 text-base">上传服饰实拍图</p>
-                <p className="text-xs text-gray-400">点击/拖拽图片至此处</p>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-brand/30 rounded-2xl bg-brand/5 p-4 flex items-center justify-between group h-32">
-                <div className="w-20 h-full rounded-lg overflow-hidden bg-white border border-gray-200">
-                  <img src={uploadedImage} alt="Uploaded" className="w-full h-full object-cover" />
-                </div>
-                <button 
+          {/* Upload Area - 通用版 */}
+          {version === 'common' && (
+            <div>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                className="hidden"
+                accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff,.gif"
+                onChange={handleFileUpload}
+              />
+              
+              {!uploadedImage ? (
+                <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-6 py-2 bg-brand/10 text-brand rounded-full text-sm font-medium hover:bg-brand/20 transition-colors"
+                  className="bg-[#3713ec]/5 border border-dashed border-[#3713ec]/30 rounded-xl p-6 text-center flex flex-col items-center justify-center h-40 cursor-pointer hover:bg-[#3713ec]/8 hover:border-[#3713ec]/50 transition-all duration-200"
                 >
-                  重新上传
-                </button>
+                  <div className="flex justify-center mb-3">
+                    <div className="w-12 h-12 rounded-full bg-[#3713ec]/10 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-3xl text-[#3713ec]">add_photo_alternate</span>
+                    </div>
+                  </div>
+                  <p className="font-medium text-gray-800">上传服饰实拍图</p>
+                  <p className="text-xs text-gray-500 mt-1">点击/拖拽图片至此处</p>
+                </div>
+              ) : (
+                <div className="bg-[#3713ec]/5 border border-dashed border-[#3713ec]/30 rounded-xl p-3 flex items-center h-40 gap-4">
+                  <div className="h-full aspect-[3/4] relative rounded-lg overflow-hidden bg-white border border-black/5 flex-shrink-0">
+                    <img src={uploadedImage} alt="Uploaded clothing" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 flex justify-center items-center">
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-5 py-2.5 rounded-full bg-[#3713ec]/10 text-[#3713ec] font-medium text-sm hover:bg-[#3713ec]/20 transition-colors"
+                    >
+                      重新上传
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Upload Area - 专业版 */}
+          {version === 'pro' && (
+            <>
+              <input 
+                type="file" 
+                ref={singleOutfitFileInputRef}
+                className="hidden"
+                accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff,.gif"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (!['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'].includes(file.type)) {
+                      alert('不支持的文件格式');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setSingleOutfitImage(e.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <input 
+                type="file" 
+                ref={singleOutfitBackFileInputRef}
+                className="hidden"
+                accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff,.gif"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (!['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'].includes(file.type)) {
+                      alert('不支持的文件格式');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setSingleOutfitBackImage(e.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <input 
+                type="file" 
+                ref={topOutfitFileInputRef}
+                className="hidden"
+                accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff,.gif"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (!['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'].includes(file.type)) {
+                      alert('不支持的文件格式');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setTopOutfitImage(e.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <input 
+                type="file" 
+                ref={bottomOutfitFileInputRef}
+                className="hidden"
+                accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff,.gif"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (!['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'].includes(file.type)) {
+                      alert('不支持的文件格式');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setBottomOutfitImage(e.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <input 
+                type="file" 
+                ref={topOutfitBackFileInputRef}
+                className="hidden"
+                accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff,.gif"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (!['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'].includes(file.type)) {
+                      alert('不支持的文件格式');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setTopOutfitBackImage(e.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <input 
+                type="file" 
+                ref={bottomOutfitBackFileInputRef}
+                className="hidden"
+                accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff,.gif"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (!['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'].includes(file.type)) {
+                      alert('不支持的文件格式');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setBottomOutfitBackImage(e.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <div className="flex border-b border-gray-200 text-center text-sm font-medium -mt-2">
+                <div className="flex-1 relative">
+                  <button 
+                    onClick={() => setOutfitType('single')}
+                    className={`w-full py-3 transition-colors ${outfitType === 'single' ? 'text-[#3713ec]' : 'text-[#64748B] hover:text-[#334155]'}`}
+                  >
+                    单件上身
+                  </button>
+                  {outfitType === 'single' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#3713ec] rounded-full"></div>
+                  )}
+                </div>
+                <div className="flex-1 relative">
+                  <button 
+                    onClick={() => setOutfitType('match')}
+                    className={`w-full py-3 transition-colors ${outfitType === 'match' ? 'text-[#3713ec]' : 'text-[#64748B] hover:text-[#334155]'}`}
+                  >
+                    上下装搭配
+                  </button>
+                  {outfitType === 'match' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#3713ec] rounded-full"></div>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
+              
+              {/* 单件上身上传区域 */}
+              {outfitType === 'single' && (
+                <div className="space-y-4">
+                  {!singleOutfitImage ? (
+                    <div className="flex flex-col items-center justify-center p-6 border border-dashed border-[#3713ec]/30 rounded-2xl bg-[#3713ec]/[0.03] hover:bg-[#3713ec]/[0.06] transition-colors cursor-pointer group h-40">
+                      <div 
+                        onClick={() => singleOutfitFileInputRef.current?.click()}
+                        className="flex justify-center mb-3"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-[#3713ec]/10 flex items-center justify-center group-hover:bg-[#3713ec]/20 cursor-pointer">
+                          <span className="material-symbols-outlined text-3xl text-[#3713ec]">add_photo_alternate</span>
+                        </div>
+                      </div>
+                      <p className="font-bold text-gray-900 text-sm mb-1">上传服饰实拍图</p>
+                      <p className="text-[10px] text-gray-400">点击/拖拽图片</p>
+                    </div>
+                  ) : (
+                    <div className="bg-[#3713ec]/5 border border-dashed border-[#3713ec]/30 rounded-xl p-3 flex items-center h-40 gap-4">
+                      <div className="h-full aspect-[3/4] relative rounded-lg overflow-hidden bg-white border border-black/5 flex-shrink-0">
+                        <img src={singleOutfitImage} alt="Uploaded clothing" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 flex justify-center items-center">
+                        <button 
+                          onClick={() => singleOutfitFileInputRef.current?.click()}
+                          className="px-5 py-2.5 rounded-full bg-[#3713ec]/10 text-[#3713ec] font-medium text-sm hover:bg-[#3713ec]/20 transition-colors"
+                        >
+                          重新上传正面图
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {!singleOutfitBackImage ? (
+                    <div 
+                      onClick={() => singleOutfitBackFileInputRef.current?.click()}
+                      className="bg-slate-100 border border-dashed border-gray-200 rounded-xl p-4 flex items-center justify-center space-x-2 text-center cursor-pointer hover:bg-slate-200 hover:border-gray-300 transition-all duration-200"
+                    >
+                      <span className="material-symbols-outlined text-2xl text-gray-500">add_photo_alternate</span>
+                      <div className="text-left">
+                        <p className="font-medium text-sm text-gray-800">上传服饰后背图</p>
+                        <p className="text-xs text-gray-500 mt-0.5">如果不需要后背图可忽略上传</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-[#3713ec]/5 border border-dashed border-[#3713ec]/30 rounded-xl p-3 flex items-center h-40 gap-4">
+                      <div className="h-full aspect-[3/4] relative rounded-lg overflow-hidden bg-white border border-black/5 flex-shrink-0">
+                        <img src={singleOutfitBackImage} alt="Uploaded clothing back" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 flex justify-center items-center">
+                        <button 
+                          onClick={() => singleOutfitBackFileInputRef.current?.click()}
+                          className="px-5 py-2.5 rounded-full bg-[#3713ec]/10 text-[#3713ec] font-medium text-sm hover:bg-[#3713ec]/20 transition-colors"
+                        >
+                          重新上传背面图
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* 上下装搭配上传区域 */}
+              {outfitType === 'match' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* 上传上装区域 */}
+                    <div className="space-y-3">
+                      {!topOutfitImage ? (
+                        <div 
+                          onClick={() => topOutfitFileInputRef.current?.click()}
+                          className="flex flex-col items-center justify-center p-6 border border-dashed border-[#3713ec]/30 rounded-2xl bg-[#3713ec]/[0.03] hover:bg-[#3713ec]/[0.06] transition-colors cursor-pointer group h-40"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-[#3713ec]/10 flex items-center justify-center mb-2 group-hover:bg-[#3713ec]/20">
+                            <span className="material-symbols-outlined text-[#3713ec]">checkroom</span>
+                          </div>
+                          <p className="font-bold text-gray-900 text-sm mb-1">上传上装</p>
+                          <p className="text-[10px] text-gray-400">点击/拖拽图片</p>
+                        </div>
+                      ) : (
+                        <div className="bg-[#3713ec]/5 border border-[#3713ec]/30 rounded-xl h-40 overflow-hidden relative">
+                          <div className="w-full h-full relative bg-white">
+                            <img src={topOutfitImage} alt="已上传上装" className="w-full h-full object-cover" />
+                            <button 
+                              onClick={() => setTopOutfitImage(null)}
+                              className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/50 hover:bg-black/70 rounded-full text-white backdrop-blur-sm transition-all"
+                            >
+                              <span className="material-symbols-outlined" style={{fontSize: '18px'}}>close</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {!topOutfitBackImage ? (
+                        <div 
+                          onClick={() => topOutfitBackFileInputRef.current?.click()}
+                          className="bg-slate-100 border border-dashed border-gray-200 rounded-xl py-3 flex items-center justify-center space-x-1.5 text-center cursor-pointer hover:bg-slate-200 hover:border-gray-300 transition-all"
+                        >
+                          <span className="text-xs font-medium text-gray-500">上传上装后背图</span>
+                        </div>
+                      ) : (
+                        <div className="bg-[#3713ec]/5 border border-[#3713ec]/30 rounded-xl h-40 overflow-hidden relative">
+                          <div className="w-full h-full relative bg-white">
+                            <img src={topOutfitBackImage} alt="已上传上装后背图" className="w-full h-full object-cover" />
+                            <button 
+                              onClick={() => setTopOutfitBackImage(null)}
+                              className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/50 hover:bg-black/70 rounded-full text-white backdrop-blur-sm transition-all"
+                            >
+                              <span className="material-symbols-outlined" style={{fontSize: '18px'}}>close</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* 上传下装区域 */}
+                    <div className="space-y-3">
+                      {!bottomOutfitImage ? (
+                        <div 
+                          onClick={() => bottomOutfitFileInputRef.current?.click()}
+                          className="flex flex-col items-center justify-center p-6 border border-dashed border-[#3713ec]/30 rounded-2xl bg-[#3713ec]/[0.03] hover:bg-[#3713ec]/[0.06] transition-colors cursor-pointer group h-40"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-[#3713ec]/10 flex items-center justify-center mb-2 group-hover:bg-[#3713ec]/20">
+                            <span className="material-symbols-outlined text-[#3713ec]">apparel</span>
+                          </div>
+                          <p className="font-bold text-gray-900 text-sm mb-1">上传下装</p>
+                          <p className="text-[10px] text-gray-400">点击/拖拽图片</p>
+                        </div>
+                      ) : (
+                        <div className="bg-[#3713ec]/5 border border-[#3713ec]/30 rounded-xl h-40 overflow-hidden relative">
+                          <div className="w-full h-full relative bg-white">
+                            <img src={bottomOutfitImage} alt="已上传下装" className="w-full h-full object-cover" />
+                            <button 
+                              onClick={() => setBottomOutfitImage(null)}
+                              className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/50 hover:bg-black/70 rounded-full text-white backdrop-blur-sm transition-all"
+                            >
+                              <span className="material-symbols-outlined" style={{fontSize: '18px'}}>close</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {!bottomOutfitBackImage ? (
+                        <div 
+                          onClick={() => bottomOutfitBackFileInputRef.current?.click()}
+                          className="bg-slate-100 border border-dashed border-gray-200 rounded-xl py-3 flex items-center justify-center space-x-1.5 text-center cursor-pointer hover:bg-slate-200 hover:border-gray-300 transition-all"
+                        >
+                          <span className="text-xs font-medium text-gray-500">上传下装后背图</span>
+                        </div>
+                      ) : (
+                        <div className="bg-[#3713ec]/5 border border-[#3713ec]/30 rounded-xl h-40 overflow-hidden relative">
+                          <div className="w-full h-full relative bg-white">
+                            <img src={bottomOutfitBackImage} alt="已上传下装后背图" className="w-full h-full object-cover" />
+                            <button 
+                              onClick={() => setBottomOutfitBackImage(null)}
+                              className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/50 hover:bg-black/70 rounded-full text-white backdrop-blur-sm transition-all"
+                            >
+                              <span className="material-symbols-outlined" style={{fontSize: '18px'}}>close</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
 
           {/* Model Type Selection */}
-          <div>
-            <h3 className="text-base font-semibold text-gray-800 mb-3">选择模特类型</h3>
-            <div className="flex gap-3 mb-4">
+          <div className="space-y-4">
+            <h3 className="text-base font-semibold">选择模特类型</h3>
+            <div className="flex space-x-3 text-sm">
               <button
                 onClick={() => setModelType('adult')}
                 className={clsx(
-                  "flex-1 py-2 rounded-full text-sm font-medium transition-all border",
+                  "flex-1 py-2.5 rounded-full text-sm font-medium border",
                   modelType === 'adult' 
-                    ? "bg-brand/10 text-brand border-brand" 
-                    : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                    ? "border-[#3713ec] text-[#3713ec] bg-[#3713ec]/10" 
+                    : "bg-slate-100 text-[#64748B] hover:bg-gray-100"
                 )}
               >
-                成人
+                随机模特
               </button>
               <button
-                onClick={() => setModelType('child')}
+                onClick={() => {
+                  setModelType('system');
+                  // Only call API if:
+                  // 1. We haven't called it before, OR
+                  // 2. We called it before but got 0 models
+                  if (!hasCalledSystemModelsAPI || systemModels.length === 0) {
+                    fetchSystemModels(1, 12);
+                  }
+                }}
                 className={clsx(
-                  "flex-1 py-2 rounded-full text-sm font-medium transition-all border",
-                  modelType === 'child' 
-                    ? "bg-brand/10 text-brand border-brand" 
-                    : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                  "flex-1 py-2.5 rounded-full text-sm font-medium border",
+                  modelType === 'system' 
+                    ? "border-[#3713ec] text-[#3713ec] bg-[#3713ec]/10" 
+                    : "bg-slate-100 text-[#64748B] hover:bg-gray-100"
                 )}
               >
-                儿童
+                系统模特
               </button>
+              {version === 'pro' && (
+                <button
+                  onClick={handleMyModelsClick}
+                  className={clsx(
+                    "flex-1 py-2.5 rounded-full text-sm font-medium border",
+                    modelType === 'my' 
+                      ? "border-[#3713ec] text-[#3713ec] bg-[#3713ec]/10" 
+                      : "bg-slate-100 text-[#64748B] hover:bg-gray-100"
+                  )}
+                >
+                  我的模特
+                </button>
+              )}
             </div>
             
             <div className="grid grid-cols-3 gap-3">
+              {modelType === 'my' && (
+                <div 
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      openAuthModal();
+                      return;
+                    }
+                    setAddModelModalVisible(true);
+                  }}
+                  className="aspect-[3/4] flex flex-col items-center justify-center bg-[#3713ec]/[0.03] border border-dashed border-[#3713ec]/20 rounded-xl cursor-pointer hover:bg-[#3713ec]/[0.06] transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#3713ec] text-white flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition-transform">
+                    <span className="material-icons-outlined text-lg">add</span>
+                  </div>
+                  <span className="text-[#3713ec] font-medium text-sm">添加模特</span>
+                </div>
+              )}
               {displayedModels.map((model) => (
                 <div 
                   key={model.id}
-                  onClick={() => setSelectedModel(model.id)}
-                  onMouseEnter={(e) => handleMainHover(e, model.id)}
-                  onMouseLeave={(e) => handleMainHover(e, null)}
+                  id={`main-model-item-${model.id}`}
+                  onClick={() => {
+                    if (modelType === 'my' && !isLoggedIn) {
+                      return;
+                    }
+                    setSelectedModel(model.id);
+                  }}
+                  onMouseEnter={() => handleMainHover(null as any, model.id)}
+                  onMouseLeave={() => handleMainHover(null as any, null)}
                   className={clsx(
                     "aspect-[3/4] rounded-lg overflow-hidden cursor-pointer border-2 transition-all relative",
-                    selectedModel === model.id ? "border-brand" : "border-transparent hover:border-gray-200",
-                    // Visual feedback for hover
-                    "hover:border-brand/50"
+                    selectedModel === model.id ? "border-[#3713ec]" : "border-transparent",
+                    "hover:border-[#3713ec]"
                   )}
                 >
-                  <img src={model.image} alt="Model" className="w-full h-full object-cover" />
+                  <img src={(model as any).avatar || ((model as any).images && (model as any).images[0]?.file_path) || (model as any).image} alt="Model" className="w-full h-full object-cover" />
                 </div>
               ))}
               <div 
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowMoreModal(true);
+                  // For my models, load more images when opening the modal only if we haven't loaded them yet
+                  if (modelType === 'my' && isLoggedIn && allMyModels.length < 17) {
+                    // Only fetch if we don't have enough models already
+                    fetchMyModels(2, 12); // Load page 2 with 12 items
+                  }
+                  // For system models, load more images when opening the modal only if we haven't loaded them yet
+                  if (modelType === 'system' && systemModels.length < 17) {
+                    // Only fetch if we don't have enough models already
+                    fetchSystemModels(2, 12); // Load page 2 with 12 items
+                  }
                 }}
                 className="aspect-[3/4] bg-gray-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
               >
@@ -327,9 +981,9 @@ export const LeftPanel: React.FC = () => {
           </div>
 
           {/* Style Scene Selection */}
-          <div>
-            <h3 className="text-base font-semibold text-gray-800 mb-3">选择风格场景</h3>
-            <div className="flex gap-3 mb-4">
+          <div className="space-y-4">
+            <h3 className="text-base font-semibold">选择风格场景</h3>
+            <div className="flex space-x-3 text-sm overflow-x-auto pb-2 -mb-2">
               {[
                 { key: 'daily', label: '日常生活风' },
                 { key: 'magazine', label: '时尚杂志风' },
@@ -339,10 +993,10 @@ export const LeftPanel: React.FC = () => {
                   key={item.key}
                   onClick={() => { setStyleCategory(item.key); setSelectedStyle(1); }}
                   className={clsx(
-                    "flex-1 py-2 rounded-full text-sm font-medium transition-all border",
+                    "flex-shrink-0 px-4 py-2.5 rounded-full font-medium border",
                     styleCategory === item.key
-                      ? "bg-brand/10 text-brand border-brand"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                      ? "border-[#3713ec] text-[#3713ec] bg-[#3713ec]/10" 
+                      : "bg-slate-100 text-[#64748B] hover:bg-gray-100"
                   )}
                 >
                   {item.label}
@@ -361,25 +1015,40 @@ export const LeftPanel: React.FC = () => {
               {currentStyles.map((style) => (
                 <div 
                   key={style.id}
-                  onClick={() => setSelectedStyle(style.id)}
-                  onMouseEnter={(e) => {
-                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                  id={`main-style-item-${style.id}`}
+                  onClick={() => {
+                    if (showCustomSceneInput) {
+                      if (customSceneText.trim()) {
+                        setCustomSceneDisabled(true);
+                      } else {
+                        setShowCustomSceneInput(false);
+                      }
+                    }
+                    setSelectedStyle(style.id);
+                  }}
+                  onMouseEnter={() => {
                     const containerRect = containerRef.current?.getBoundingClientRect();
                     if (!containerRect) return;
-                    const itemTop = rect.top - containerRect.top;
-                    const arrowTop = itemTop + rect.height / 2;
-                    const previewHeight = 300;
-                    let top = arrowTop - previewHeight / 2;
-                    const containerHeight = containerRef.current!.offsetHeight;
-                    if (top < 0) top = 0;
-                    if (top + previewHeight > containerHeight) top = containerHeight - previewHeight;
-                    setStyleMainHoveredId(style.id);
-                    setStyleMainPreviewPos({ top, arrowTop: arrowTop - top });
+                    // Use id-based positioning instead of event target
+                    const styleElement = document.getElementById(`main-style-item-${style.id}`);
+                    if (styleElement) {
+                      const rect = styleElement.getBoundingClientRect();
+                      const itemTop = rect.top - containerRect.top;
+                      const arrowTop = itemTop + rect.height / 2;
+                      const previewHeight = 300;
+                      let top = arrowTop - previewHeight / 2;
+                      const containerHeight = containerRef.current!.offsetHeight;
+                      if (top < 0) top = 0;
+                      if (top + previewHeight > containerHeight) top = containerHeight - previewHeight;
+                      setStyleMainHoveredId(style.id);
+                      setStyleMainPreviewPos({ top, arrowTop: arrowTop - top });
+                    }
                   }}
                   onMouseLeave={() => setStyleMainHoveredId(null)}
                   className={clsx(
                     "group relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all",
-                    selectedStyle === style.id ? "border-brand" : "border-transparent"
+                    selectedStyle === style.id ? "border-[#3713ec]" : "border-transparent",
+                    "hover:border-[#3713ec]"
                   )}
                 >
                   <img src={style.image} alt={style.title} className="w-full h-full object-cover" />
@@ -395,21 +1064,53 @@ export const LeftPanel: React.FC = () => {
                 <span className="text-gray-500 text-xs">更多</span>
               </div>
             </div>
+            {!showCustomSceneInput && (
+              <div className="w-full">
+                <button 
+                  onClick={() => setShowCustomSceneInput(true)}
+                  className="w-full h-12 rounded-lg bg-[#3713ec]/5 border border-dashed border-[#3713ec]/30 flex items-center justify-center gap-2 text-[#3713ec] font-medium text-sm transition-colors hover:bg-[#3713ec]/10"
+                >
+                  <span className="material-symbols-outlined text-lg">edit</span>
+                  <span>自定义，输入场景描述</span>
+                </button>
+              </div>
+            )}
+            {showCustomSceneInput && (
+              <div className="w-full">
+                <textarea 
+                  value={customSceneText}
+                  onChange={(e) => setCustomSceneText(e.target.value)}
+                  onBlur={() => {
+                    if (customSceneText.trim()) {
+                      setSelectedStyle(null);
+                    } else {
+                      setShowCustomSceneInput(false);
+                    }
+                  }}
+                  onFocus={() => setCustomSceneDisabled(false)}
+                  className={clsx(
+                    "w-full h-24 rounded-lg bg-white text-sm p-3 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#3713ec] resize-none align-top shadow-sm",
+                    customSceneDisabled ? "border-2 border-gray-300 text-gray-400" : "border border-[#3713ec] text-gray-800"
+                  )}
+                  placeholder="您希望模特在一个什么样的场景？示例：明亮的咖啡馆，有浅灰沙发和原木书架"
+                />
+              </div>
+            )}
           </div>
 
           {/* Ratio Selection */}
-          <div>
-            <h3 className="text-base font-semibold text-gray-800 mb-3">选择图片比例</h3>
-            <div className="flex gap-3">
+          <div className="space-y-4">
+            <h3 className="text-base font-semibold">选择图片比例</h3>
+            <div className="flex space-x-3 text-sm font-medium">
               {['1:1', '2:3', '3:4'].map((r) => (
                 <button
                   key={r}
                   onClick={() => setRatio(r)}
                   className={clsx(
-                    "flex-1 py-1.5 rounded-full text-xs font-medium transition-colors border",
+                    "flex-1 py-2.5 rounded-full border",
                     ratio === r 
-                      ? "bg-brand/10 text-brand border-brand/20" 
-                      : "bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200"
+                      ? "border-[#3713ec] text-[#3713ec] bg-[#3713ec]/10" 
+                      : "bg-slate-100 text-[#64748B] hover:bg-gray-100"
                   )}
                 >
                   {r}
@@ -419,18 +1120,18 @@ export const LeftPanel: React.FC = () => {
           </div>
 
           {/* Quantity Selection */}
-          <div className="pb-4">
-            <h3 className="text-base font-semibold text-gray-800 mb-3">选择图片数量</h3>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 6, 9].map((q) => (
+          <div className="space-y-4 pb-4">
+            <h3 className="text-base font-semibold">选择图片数量</h3>
+            <div className="grid grid-cols-4 gap-3 text-sm font-medium">
+              {[1, 2, 4, 6].map((q) => (
                 <button
                   key={q}
                   onClick={() => setQuantity(q)}
                   className={clsx(
-                    "flex-1 py-1.5 rounded-full text-xs font-medium transition-colors border",
+                    "py-2.5 rounded-full border",
                     quantity === q 
-                      ? "bg-brand/10 text-brand border-brand/20" 
-                      : "bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200"
+                      ? "border-[#3713ec] text-[#3713ec] bg-[#3713ec]/10" 
+                      : "bg-slate-100 text-[#64748B] hover:bg-gray-100"
                   )}
                 >
                   {q}
@@ -442,7 +1143,7 @@ export const LeftPanel: React.FC = () => {
 
         {/* Sticky Footer Button & Agreement */}
         <div className="sticky bottom-0 left-0 right-0 p-6 pt-2 bg-white z-10 border-t border-gray-50">
-          <button className="w-full bg-gradient-to-r from-[#6C5CFF] to-[#5a4cf0] text-white py-3 rounded-full text-base font-bold shadow-lg shadow-brand/30 hover:shadow-brand/40 transition-all flex items-center justify-center gap-2">
+          <button onClick={handleGenerate} className="w-full bg-gradient-to-r from-[#6C5CFF] to-[#5a4cf0] text-white py-3 rounded-full text-base font-bold shadow-lg shadow-brand/30 hover:shadow-brand/40 transition-all flex items-center justify-center gap-2">
             <span>开始生成</span>
             <div className="flex items-center bg-white/20 rounded-full px-2 py-0.5 text-xs">
               <span>30</span>
@@ -471,7 +1172,7 @@ export const LeftPanel: React.FC = () => {
             
             <div className="w-[280px] aspect-[3/4] relative z-10 bg-white rounded-xl overflow-hidden">
               <img 
-                src={mainPreviewModel.image} 
+                src={(mainPreviewModel as any).avatar || ((mainPreviewModel as any).images && (mainPreviewModel as any).images[0]?.file_path) || (mainPreviewModel as any).image} 
                 alt="Preview" 
                 className="w-full h-full object-cover"
               />
@@ -501,44 +1202,63 @@ export const LeftPanel: React.FC = () => {
           className="absolute left-[calc(100%+1px)] top-0 z-[100] flex animate-in fade-in slide-in-from-left-2 duration-200 items-start h-full"
         >
            {/* Popover Content */}
-           <div className="bg-white rounded-2xl w-[300px] h-full max-h-[calc(100vh-85px)] flex flex-col shadow-2xl relative z-10 border border-gray-100 overflow-hidden hover-scroll">
+           <div className="bg-white rounded-2xl w-[300px] h-full max-h-[calc(100vh-56px)] flex flex-col shadow-2xl relative z-10 border border-gray-100 overflow-hidden hover-scroll">
               <div className="flex items-center justify-between p-4 border-b border-gray-50">
-                <h3 className="font-bold text-base text-gray-800">姿势</h3>
+                <h3 className="font-bold text-base text-gray-800">{getModalTitle()}</h3>
                 <button onClick={() => setShowMoreModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               
-              <div ref={modalGridRef} className="flex-1 overflow-y-auto p-4 scrollbar-thin-dark">
+              <div ref={modalGridRef} className="flex-1 overflow-y-auto p-4 scrollbar-thin-dark" onScroll={(e) => {
+                const target = e.target as HTMLElement;
+                // Check if user has scrolled to the bottom (with a 10px threshold for better user experience)
+                if (target.scrollHeight - target.scrollTop <= target.clientHeight + 10) {
+                  if (modelType === 'my' && isLoggedIn) {
+                    // Load more images for my models
+                    const nextPage = Math.floor(allMyModels.length / 12) + 1;
+                    fetchMyModels(nextPage, 12);
+                  } else if (modelType === 'system') {
+                    // Load more images for system models
+                    const nextPage = Math.floor(systemModels.length / 12) + 1;
+                    fetchSystemModels(nextPage, 12);
+                  }
+                }
+              }}>
                 <div className="grid grid-cols-3 gap-2">
                   {modalModels.map((model) => (
                     <div 
                       key={model.id}
-                      onMouseEnter={(e) => {
+                      id={`model-item-${model.id}`}
+                      onMouseEnter={() => {
                         setHoveredModelId(model.id);
                         if (popoverRef.current) {
-                          const itemRect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                          const popoverRect = popoverRef.current.getBoundingClientRect();
-                          const centerY = itemRect.top - popoverRect.top + itemRect.height / 2;
-                          const previewHeight = 400;
-                          let top = centerY - previewHeight / 2;
-                          const popoverHeight = popoverRef.current.offsetHeight;
-                          if (top < 0) top = 0;
-                          if (top + previewHeight > popoverHeight) {
-                            top = popoverHeight - previewHeight;
+                          // Use id-based positioning instead of event target
+                          const modelElement = document.getElementById(`model-item-${model.id}`);
+                          if (modelElement) {
+                            const itemRect = modelElement.getBoundingClientRect();
+                            const popoverRect = popoverRef.current.getBoundingClientRect();
+                            const centerY = itemRect.top - popoverRect.top + itemRect.height / 2;
+                            const previewHeight = 400;
+                            let top = centerY - previewHeight / 2;
+                            const popoverHeight = popoverRef.current.offsetHeight;
+                            if (top < 0) top = 0;
+                            if (top + previewHeight > popoverHeight) {
+                              top = popoverHeight - previewHeight;
+                            }
+                            setModalPreviewPos({ top, arrowTop: centerY - top });
                           }
-                          setModalPreviewPos({ top, arrowTop: centerY - top });
                         }
                       }}
                       onMouseLeave={() => setHoveredModelId(null)}
-                      onClick={() => handleModelSelect(model.id, modelType === 'adult')}
+                      onClick={() => handleModelSelect(model.id, modelType === 'my' ? null : modelType === 'adult')}
                       className={clsx(
                         "aspect-[3/4] rounded-lg overflow-hidden cursor-pointer border-2 transition-all relative",
-                        selectedModel === model.id ? "border-brand" : "border-transparent",
-                        "hover:border-brand"
+                        selectedModel === model.id ? "border-[#3713ec]" : "border-transparent",
+                        "hover:border-[#3713ec]"
                       )}
                     >
-                      <img src={model.image} alt="Model" className="w-full h-full object-cover" />
+                      <img src={(model as any).avatar || ((model as any).images && (model as any).images[0]?.file_path) || (model as any).image} alt="Model" className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
@@ -559,10 +1279,10 @@ export const LeftPanel: React.FC = () => {
                 
                 <div className="w-[280px] aspect-[3/4] relative z-10 bg-white rounded-xl overflow-hidden">
                   <img 
-                    src={previewModel.image} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover"
-                  />
+                      src={(previewModel as any).avatar || ((previewModel as any).images && (previewModel as any).images[0]?.file_path) || (previewModel as any).image} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                    />
                 </div>
              </div>
            )}
@@ -580,7 +1300,7 @@ export const LeftPanel: React.FC = () => {
             }
           }}
         >
-          <div className="bg-white rounded-2xl w-[300px] h-full max-h-[calc(100vh-85px)] flex flex-col shadow-2xl relative z-10 border border-gray-100 overflow-hidden hover-scroll">
+          <div className="bg-white rounded-2xl w-[300px] h-full max-h-[calc(100vh-56px)] flex flex-col shadow-2xl relative z-10 border border-gray-100 overflow-hidden hover-scroll">
             <div className="flex items-center justify-between p-4 border-b border-gray-50">
               <h3 className="font-bold text-base text-gray-800">风格</h3>
               <button onClick={() => setShowStyleModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -592,18 +1312,23 @@ export const LeftPanel: React.FC = () => {
                 {modalStyles.map((style) => (
                   <div
                     key={style.id}
-                    onMouseEnter={(e) => {
+                    id={`style-item-${style.id}`}
+                    onMouseEnter={() => {
                       setStyleHoveredId(style.id);
                       if (stylePopoverRef.current) {
-                        const itemRect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                        const popRect = stylePopoverRef.current.getBoundingClientRect();
-                        const centerY = itemRect.top - popRect.top + itemRect.height / 2;
-                        const previewHeight = 300;
-                        let top = centerY - previewHeight / 2;
-                        const ph = stylePopoverRef.current.offsetHeight;
-                        if (top < 0) top = 0;
-                        if (top + previewHeight > ph) top = ph - previewHeight;
-                        setStyleModalPreviewPos({ top, arrowTop: centerY - top });
+                        // Use id-based positioning instead of event target
+                        const styleElement = document.getElementById(`style-item-${style.id}`);
+                        if (styleElement) {
+                          const itemRect = styleElement.getBoundingClientRect();
+                          const popRect = stylePopoverRef.current.getBoundingClientRect();
+                          const centerY = itemRect.top - popRect.top + itemRect.height / 2;
+                          const previewHeight = 300;
+                          let top = centerY - previewHeight / 2;
+                          const ph = stylePopoverRef.current.offsetHeight;
+                          if (top < 0) top = 0;
+                          if (top + previewHeight > ph) top = ph - previewHeight;
+                          setStyleModalPreviewPos({ top, arrowTop: centerY - top });
+                        }
                       }
                     }}
                     onMouseLeave={() => setStyleHoveredId(null)}
@@ -653,6 +1378,12 @@ export const LeftPanel: React.FC = () => {
           )}
         </div>
       )}
+
+      <AddModelModal 
+        visible={addModelModalVisible}
+        onClose={() => setAddModelModalVisible(false)}
+        onSuccess={handleModelAdded}
+      />
     </div>
   );
 };

@@ -12,6 +12,7 @@ from backend.order.models import order
 from backend.notification.models import notification
 from backend.config_center.models import config
 from backend.yilaitumodel.models import model as yilaitumodel_model
+from backend.original_image_record.models import original_image_record
 
 def init_tables():
     print("Creating tables for new modules...")

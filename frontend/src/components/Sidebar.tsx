@@ -21,7 +21,7 @@ export const Sidebar: React.FC = () => {
   const location = useLocation();
 
   return (
-    <div className="w-[200px] h-[calc(100vh-4rem)] bg-white border-r border-gray-100 flex flex-col fixed left-0 top-16 z-40">
+    <div className="w-[200px] h-[calc(100vh-6px)] bg-white border-r border-gray-100 flex flex-col fixed left-0 top-19 z-40">
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-3">

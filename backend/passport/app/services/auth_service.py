@@ -3,6 +3,7 @@ from sqlalchemy import select
 from backend.passport.app.models.user import User
 from backend.passport.app.models.credential import UserCredential
 from backend.passport.app.models.login_session import LoginSession
+from backend.points.models.points import PointsAccount
 from backend.passport.app.schemas.user import UserCreate
 from backend.passport.app.core.security import get_password_hash, verify_password, create_access_token
 from backend.passport.app.core.exceptions import ValidationError, AuthenticationError, NotFoundError
@@ -40,6 +41,7 @@ class AuthService:
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
+            "token_type": "bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         }
 
@@ -150,13 +152,20 @@ class AuthService:
         log_service.create_log(db, user.id, "login", "success", ip=ip, device_fingerprint=ua, detail="Login by phone")
         token_data = await cls._create_token_pair(db, user.id)
         
+        # Get user points account
+        points_account = db.query(PointsAccount).filter(PointsAccount.user_id == user.id).first()
+        total_points = 0
+        if points_account:
+            total_points = float(points_account.balance_permanent) + float(points_account.balance_limited)
+        
         # Add user information to the response
         token_data["user"] = {
             "id": user.id,
             "username": user.username,
             "phone": phone,
             "role": user.role,
-            "status": user.status
+            "status": user.status,
+            "points": total_points
         }
         
         return token_data

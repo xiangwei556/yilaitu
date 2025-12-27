@@ -143,8 +143,8 @@ const PointsModal: React.FC<PointsModalProps> = ({ isOpen, onClose }) => {
               {transactions.map((tx) => (
                 <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-4 font-medium text-gray-900">{getTypeLabel(tx.type, tx.source_type)}</td>
-                  <td className={`px-4 py-4 font-medium ${Number(tx.amount) < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                    {Number(tx.amount) > 0 ? '+' : ''}{Number(tx.amount)}
+                  <td className={`px-4 py-4 font-medium ${tx.type === 'burn' ? 'text-red-500' : 'text-green-500'}`}>
+                    {tx.type === 'earn' ? '+' : '-'}{Number(tx.amount)}
                   </td>
                   <td className="px-4 py-4 text-gray-500">{new Date(tx.created_at).toLocaleString()}</td>
                 </tr>
