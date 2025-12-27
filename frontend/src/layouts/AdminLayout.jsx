@@ -74,6 +74,10 @@ const AdminLayout = () => {
       key: '/admin/notifications',
       icon: <BellOutlined />,
       label: '通知管理',
+      children: [
+        { key: '/admin/notifications/config', label: '模板配置' },
+        { key: '/admin/notifications/send', label: '发送消息' },
+      ],
     },
     {
       key: '/admin/config',

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { webSocketService } from '../services/WebSocketService';
 
 interface AuthStore {
   isOpen: boolean;
@@ -13,9 +14,9 @@ interface AuthStore {
   closeAuthModal: () => void;
   login: (userData?: { nickname: string; id: string; points: number; avatar: string; }) => void;
   logout: () => void;
+  updatePoints: (points: number) => void;
 }
 
-// 从localStorage读取登录状态
 const loadAuthState = () => {
   const savedIsLoggedIn = localStorage.getItem('isLoggedIn');
   const savedUser = localStorage.getItem('user');
@@ -28,18 +29,14 @@ const loadAuthState = () => {
 
 export const useAuthStore = create<AuthStore>((set) => ({
   isOpen: false,
-  ...loadAuthState(), // 初始化时从localStorage加载状态
+  ...loadAuthState(),
   openAuthModal: () => set({ isOpen: true }),
   closeAuthModal: () => set({ isOpen: false }),
   login: (userData) => {
-    const user = userData || {
-      nickname: '188****8888',
-      id: '12345678',
-      points: 30,
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
-    };
+    if (!userData) return;
     
-    // 保存到localStorage
+    const user = userData;
+    
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('user', JSON.stringify(user));
     
@@ -50,10 +47,23 @@ export const useAuthStore = create<AuthStore>((set) => ({
     });
   },
   logout: () => {
-    // 清除localStorage
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
+    
+    webSocketService.disconnect();
     
     set({ isLoggedIn: false, user: null });
+  },
+  updatePoints: (points: number) => {
+    set((state) => {
+      if (!state.user) return state;
+      
+      const updatedUser = { ...state.user, points };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      return { user: updatedUser };
+    });
   },
 }));

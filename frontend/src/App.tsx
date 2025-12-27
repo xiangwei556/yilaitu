@@ -33,6 +33,8 @@ import OrderList from './pages/admin/order/OrderList';
 // @ts-ignore
 import NotificationConfig from './pages/admin/notification/NotificationConfig';
 // @ts-ignore
+import SendMessage from './pages/admin/notification/SendMessage';
+// @ts-ignore
 import SystemConfig from './pages/admin/config_center/SystemConfig';
 // @ts-ignore
 import ModelList from './pages/admin/yilaitumodel/ModelList';
@@ -78,7 +80,10 @@ function App() {
            <Route path="points/packages" element={<PointsPackageConfig />} />
            <Route path="points/ledger" element={<Ledger />} />
            <Route path="orders" element={<OrderList />} />
-           <Route path="notifications" element={<NotificationConfig />} />
+           
+           <Route path="notifications/config" element={<NotificationConfig />} />
+           <Route path="notifications/send" element={<SendMessage />} />
+           
            <Route path="config" element={<SystemConfig />} />
            
            {/* YiLaiTu Model Management */}
