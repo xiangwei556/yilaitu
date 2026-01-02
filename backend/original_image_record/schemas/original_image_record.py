@@ -12,6 +12,7 @@ class OriginalImageRecordBase(BaseModel):
     status: Optional[Literal["pending", "processing", "completed", "failed"]] = "pending"
     cost_integral: Optional[Decimal] = 0
     points_transactions_id: Optional[int] = None
+    feedback_id: Optional[int] = None
 
 
 class OriginalImageRecordCreate(OriginalImageRecordBase):
@@ -26,6 +27,7 @@ class OriginalImageRecordUpdate(BaseModel):
     status: Optional[Literal["pending", "processing", "completed", "failed"]] = None
     cost_integral: Optional[Decimal] = None
     points_transactions_id: Optional[int] = None
+    feedback_id: Optional[int] = None
 
 
 class OriginalImageRecord(OriginalImageRecordBase):
@@ -34,6 +36,7 @@ class OriginalImageRecord(OriginalImageRecordBase):
     user_id: int
     created_at: datetime
     updated_at: datetime
+    feedback_id: Optional[int]
 
     class Config:
         from_attributes = True
@@ -50,8 +53,27 @@ class OriginalImageRecordResponse(BaseModel):
     status: str
     cost_integral: Decimal
     points_transactions_id: Optional[int]
+    feedback_id: Optional[int]
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OriginalImageRecordListResponse(BaseModel):
+    id: int
+    create_time: datetime
+    user_id: int
+    model_id: Optional[int]
+    model_name: Optional[str]
+    params: Optional[Dict[str, Any]]
+    images: Optional[List[Dict[str, Any]]]
+    status: str
+    cost_integral: Decimal
+    points_transactions_id: Optional[int]
+    feedback_id: Optional[int]
+    created_at: datetime
 
     class Config:
         from_attributes = True

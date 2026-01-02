@@ -7,6 +7,8 @@ from backend.points.schemas.points import PointsPackage as PointsPackageSchema, 
 from backend.passport.app.models.user import User
 from typing import List
 from datetime import datetime
+from backend.notification.services.websocket_manager import manager
+import asyncio
 
 router = APIRouter()
 
@@ -136,6 +138,14 @@ def adjust_points(
     db.add(tx)
     db.commit()
     db.refresh(account)
+    
+    # 发送积分更新通知到前端
+    total_points = float(account.balance_permanent + account.balance_limited)
+    try:
+        asyncio.create_task(manager.send_points_update(adjustment.user_id, total_points))
+    except Exception as e:
+        print(f"发送积分更新通知失败: {e}")
+    
     return account
 
 @router.get("/admin/ledger", response_model=List[PointsTransactionSchema])

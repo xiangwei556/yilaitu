@@ -9,7 +9,8 @@ from backend.original_image_record.models.original_image_record import OriginalI
 from backend.original_image_record.schemas.original_image_record import (
     OriginalImageRecordCreate,
     OriginalImageRecordUpdate,
-    OriginalImageRecordResponse
+    OriginalImageRecordResponse,
+    OriginalImageRecordListResponse
 )
 from backend.original_image_record.services.original_image_record_service import OriginalImageRecordService
 from backend.points.services.points_service import PointsService
@@ -115,7 +116,7 @@ def get_original_image_records_by_user(
     current_user: User = Depends(get_current_user)
 ):
     """
-    根据用户ID获取所有生图记录
+    根据用户ID获取所有生图记录（使用offset分页，不推荐用于大量数据）
     
     需要用户登录态
     只能获取自己的生图记录
@@ -124,6 +125,29 @@ def get_original_image_records_by_user(
         raise HTTPException(status_code=403, detail="无权访问其他用户的生图记录")
     
     records = OriginalImageRecordService.get_records_by_user_id(db, user_id, skip, limit)
+    return records
+
+
+@router.get("/original_image_record/user/{user_id}/cursor", response_model=List[OriginalImageRecordListResponse])
+def get_original_image_records_by_user_cursor(
+    user_id: int,
+    cursor: Optional[int] = Query(None, description="游标ID（上一页最后一条记录的ID），首次加载为None"),
+    limit: int = Query(100, ge=1, le=1000, description="返回记录数"),
+    model_id: Optional[int] = Query(None, description="模特ID"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    根据用户ID获取所有生图记录（使用游标分页，性能更好）
+    
+    需要用户登录态
+    只能获取自己的生图记录
+    返回精简数据，不包含params和images字段
+    """
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权访问其他用户的生图记录")
+    
+    records = OriginalImageRecordService.get_records_by_user_id_cursor(db, user_id, cursor, limit, model_id)
     return records
 
 

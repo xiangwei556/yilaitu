@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { ModelGeneration } from './pages/ModelGeneration';
 import MyModel from './components/MyModel';
+import { ImageRecordsPage } from './components/ImageRecordsHistory';
 
 // @ts-ignore
 import LoginPage from './pages/LoginPage';
@@ -40,6 +41,8 @@ import SystemConfig from './pages/admin/config_center/SystemConfig';
 import ModelList from './pages/admin/yilaitumodel/ModelList';
 // @ts-ignore
 import ModelForm from './pages/admin/yilaitumodel/ModelForm';
+// @ts-ignore
+import FeedbackManagement from './pages/admin/feedback/FeedbackManagement';
 
 
 import { AuthModal } from './components/AuthModal';
@@ -59,6 +62,12 @@ function App() {
         <Route path="/model-management" element={
           <MainLayout>
             <MyModel />
+          </MainLayout>
+        } />
+        
+        <Route path="/history" element={
+          <MainLayout>
+            <ImageRecordsPage />
           </MainLayout>
         } />
         
@@ -91,6 +100,8 @@ function App() {
            <Route path="yilaitumodel/models/new" element={<ModelForm />} />
            <Route path="yilaitumodel/models/:id/edit" element={<ModelForm />} />
 
+           {/* Feedback Management */}
+           <Route path="feedback" element={<FeedbackManagement />} />
 
            {/* Default redirect to dashboard */}
            <Route index element={<Dashboard />} />

@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { ImagePlus, ChevronDown, Coins, Upload, X, Star } from 'lucide-react';
 import clsx from 'clsx';
 import { getMyModels, getSystemModels } from '../../api/yilaitumodel';
+import { modelImageGeneration } from '../../api/modelImageGeneration';
 import AddModelModal from '../AddModelModal';
 import { useAuthStore } from '../../stores/useAuthStore';
 
@@ -36,7 +37,19 @@ const styleSets = {
 
 
 
-export const LeftPanel: React.FC = () => {
+interface LeftPanelProps {
+  isGenerating: boolean;
+  setIsGenerating: (value: boolean) => void;
+  showGenerateSuccess: boolean;
+  setShowGenerateSuccess: (value: boolean) => void;
+  onResetRef: React.MutableRefObject<(() => void) | null>;
+  onGeneratedData: (images: string[], taskId: string) => void;
+  onLoadFromRecord?: (record: any) => void;
+  onLoadFromRecordRef?: React.MutableRefObject<((record: any) => void) | null>;
+  refreshImageRecordsRef?: React.MutableRefObject<(() => void) | null>;
+}
+
+export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerating, showGenerateSuccess, setShowGenerateSuccess, onResetRef, onGeneratedData, onLoadFromRecord, onLoadFromRecordRef, refreshImageRecordsRef }) => {
   const { isLoggedIn, user, openAuthModal } = useAuthStore();
   const [version, setVersion] = useState<'common' | 'pro'>('common');
   const [outfitType, setOutfitType] = useState<'single' | 'match'>('single');
@@ -52,13 +65,28 @@ export const LeftPanel: React.FC = () => {
   // API call tracking
   const [hasCalledSystemModelsAPI, setHasCalledSystemModelsAPI] = useState(false);
   const [hasCalledMyModelsAPI, setHasCalledMyModelsAPI] = useState(false);
+  const hasCalledSystemModelsAPIRef = useRef(false);
+  const hasCalledMyModelsAPIRef = useRef(false);
+  
+  useEffect(() => {
+    hasCalledSystemModelsAPIRef.current = hasCalledSystemModelsAPI;
+  }, [hasCalledSystemModelsAPI]);
+  
+  useEffect(() => {
+    hasCalledMyModelsAPIRef.current = hasCalledMyModelsAPI;
+  }, [hasCalledMyModelsAPI]);
+  
   const [selectedModel, setSelectedModel] = useState<number>(1);
   const [styleCategory, setStyleCategory] = useState('daily');
   const [selectedStyle, setSelectedStyle] = useState<number>(1);
   const [ratio, setRatio] = useState('1:1');
   const [quantity, setQuantity] = useState(1);
   
-  // Upload State
+  const [pendingModelId, setPendingModelId] = useState<number | null>(null);
+  const [pendingStyleCategory, setPendingStyleCategory] = useState<string | null>(null);
+  const [pendingStyleId, setPendingStyleId] = useState<number | null>(null);
+  const [pendingRatio, setPendingRatio] = useState<string | null>(null);
+  const [pendingQuantity, setPendingQuantity] = useState<number | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [singleOutfitImage, setSingleOutfitImage] = useState<string | null>(null);
   const [singleOutfitBackImage, setSingleOutfitBackImage] = useState<string | null>(null);
@@ -106,6 +134,9 @@ export const LeftPanel: React.FC = () => {
   const [currentDailyStyles, setCurrentDailyStyles] = useState(styleSets.daily.slice(0, 5));
   const [currentMagazineStyles, setCurrentMagazineStyles] = useState(styleSets.magazine.slice(0, 5));
   const [currentSportStyles, setCurrentSportStyles] = useState(styleSets.sport.slice(0, 5));
+
+  const [showValidationOverlay, setShowValidationOverlay] = useState(false);
+  const [validationMessage, setValidationMessage] = useState('');
 
   // Click outside handler
   useEffect(() => {
@@ -187,16 +218,12 @@ export const LeftPanel: React.FC = () => {
         // Check if model is already in visible models
         const isVisible = visibleMyModels.find(m => m.id === id);
 
-        if (isVisible) {
-          // Model is already visible, no need to change anything
-          // Just refresh the visible models from all models
-          const newVisibleModels = allMyModels.slice(0, 4);
-          setVisibleMyModels(newVisibleModels);
-        } else {
+        if (!isVisible) {
           // Model is not in visible models, replace the first one
           // Create new visible models array with the selected model at index 0
-          const newVisibleModels = [model, ...allMyModels.slice(1, 5)];
-          setVisibleMyModels(newVisibleModels.slice(0, 4));
+          // Keep the existing visible models (excluding the first one) to maintain consistency
+          const newVisibleModels = [model, ...visibleMyModels.slice(1)];
+          setVisibleMyModels(newVisibleModels);
         }
       }
       // Don't close the modal after selection
@@ -212,15 +239,11 @@ export const LeftPanel: React.FC = () => {
         // Check if model is already in visible system models
         const isVisible = visibleSystemModels.find(m => m.id === id);
 
-        if (isVisible) {
-          // Model is already visible, no need to change anything
-          // Just refresh the visible models from all system models
-          const newVisibleModels = systemModels.slice(0, 5);
-          setVisibleSystemModels(newVisibleModels);
-        } else {
+        if (!isVisible) {
           // Model is not in visible models, replace the first one
           // Create new visible models array with the selected model at index 0
-          const newVisibleModels = [model, ...systemModels.slice(1, 5)];
+          // Keep the existing visible models (excluding the first one) to maintain consistency
+          const newVisibleModels = [model, ...visibleSystemModels.slice(1)];
           setVisibleSystemModels(newVisibleModels);
         }
       }
@@ -388,6 +411,9 @@ export const LeftPanel: React.FC = () => {
     // 2. We called it before but got 0 models
     if (!hasCalledMyModelsAPI || allMyModels.length === 0) {
       fetchMyModels(1, 12); // Use consistent limit of 12 to avoid duplicate IDs
+    } else {
+      // 确保显示正确数量的我的模特图片
+      setVisibleMyModels(allMyModels.slice(0, 4));
     }
   };
 
@@ -403,6 +429,28 @@ export const LeftPanel: React.FC = () => {
     : modelType === 'system' 
     ? visibleSystemModels 
     : visibleMyModels;
+
+  // 检查是否需要特殊渲染（当选中的模型不在前5张可见模型中时）
+  const needsSpecialRender = useMemo(() => {
+    if (!selectedModel || modelType === 'adult') return false;
+    
+    // 首先检查selectedModel是否存在于所有模型中
+    const allModels = modelType === 'system' ? systemModels : allMyModels;
+    const modelExists = allModels.find(m => m.id === selectedModel);
+    if (!modelExists) return false;
+    
+    // 然后检查是否在可见模型中
+    const currentVisibleModels = modelType === 'system' ? visibleSystemModels : visibleMyModels;
+    return !currentVisibleModels.find(m => m.id === selectedModel);
+  }, [selectedModel, modelType, visibleSystemModels, visibleMyModels, systemModels, allMyModels]);
+
+  // 获取特殊渲染的模型数据
+  const specialRenderModel = useMemo(() => {
+    if (!needsSpecialRender || !selectedModel) return null;
+    
+    const allModels = modelType === 'system' ? systemModels : allMyModels;
+    return allModels.find(m => m.id === selectedModel);
+  }, [needsSpecialRender, selectedModel, modelType, systemModels, allMyModels]);
   
   const modalModels = modelType === 'adult' 
     ? adultModels 
@@ -449,33 +497,330 @@ export const LeftPanel: React.FC = () => {
     }
   };
 
-  const handleGenerate = () => {
-    console.log('=== 开始生成 - 用户选择的数据 ===');
-    console.log('版本:', version,version === 'common' ? '通用版' : '专业版');
-    console.log('服饰类型:', outfitType,outfitType === 'single' ? '单件' : '搭配');
-    console.log('模特类型:', modelType,modelType === 'adult' ? '随机模特' : modelType === 'system' ? '系统模特' : '我的模特');
-    console.log('选中的模特ID:',selectedModel);
-    console.log('风格场景:', styleCategory,styleCategory === 'daily' ? '日常生活风' : styleCategory === 'magazine' ? '时尚杂志风' : '运动活力风');
-    console.log('选中的风格ID:', selectedStyle);
-    console.log('自定义场景描述:', customSceneText || '无');
-    console.log('图片比例:', ratio);
-    console.log('图片数量:', quantity);
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setShowGenerateSuccess(false);
     
+    let isValid = true;
+    let message = '';
+
     if (version === 'common') {
-      console.log('服饰图片:', uploadedImage ? '已上传' : '未上传');
+      if (!uploadedImage) {
+        isValid = false;
+        message = '请先上传服饰实拍图';
+      }
     } else {
       if (outfitType === 'single') {
-        console.log('单件服饰正面:', singleOutfitImage ? '已上传' : '未上传');
-        console.log('单件服饰背面:', singleOutfitBackImage ? '已上传' : '未上传');
+        if (!singleOutfitImage) {
+          isValid = false;
+          message = '请先上传服饰实拍图';
+        }
       } else {
-        console.log('上装正面:', topOutfitImage ? '已上传' : '未上传');
-        console.log('上装背面:', topOutfitBackImage ? '已上传' : '未上传');
-        console.log('下装正面:', bottomOutfitImage ? '已上传' : '未上传');
-        console.log('下装背面:', bottomOutfitBackImage ? '已上传' : '未上传');
+        if (!topOutfitImage || !bottomOutfitImage) {
+          isValid = false;
+          message = '请先上传上装和下装图片';
+        }
       }
     }
-    console.log('====================================');
+
+    if (!isValid) {
+      setValidationMessage(message);
+      setShowValidationOverlay(true);
+
+      setTimeout(() => {
+        setShowValidationOverlay(false);
+      }, 2000);
+
+      setIsGenerating(false);
+      return;
+    }
+
+    try {
+      let requestData: any = {
+        version,
+        outfit_type: outfitType,
+        model_type: modelType,
+        selected_model: Number(selectedModel) || 1,
+        style_category: styleCategory,
+        selected_style: Number(selectedStyle) || 1,
+        custom_scene_text: customSceneText || '',
+        ratio,
+        quantity: Number(quantity) > 0 ? Number(quantity) : 1,
+      };
+
+      let selectedModelUrl = '';
+      if (modelType === 'adult') {
+        const model = adultModels.find(m => m.id === selectedModel);
+        selectedModelUrl = model?.image || '';
+      } else if (modelType === 'system') {
+        const model = systemModels.find(m => m.id === selectedModel);
+        selectedModelUrl = model?.avatar || (model?.images && model.images[0]?.file_path) || '';
+      } else {
+        const model = allMyModels.find(m => m.id === selectedModel);
+        selectedModelUrl = model?.avatar || (model?.images && model.images[0]?.file_path) || '';
+      }
+      if (selectedModelUrl) {
+        requestData.selected_model_url = selectedModelUrl;
+      }
+
+      const styleObj = styleSets[styleCategory].find(s => s.id === selectedStyle);
+      if (styleObj?.image) {
+        requestData.select_style_url = styleObj.image;
+      }
+
+      if (version === 'common') {
+        if (uploadedImage) {
+          requestData.uploaded_image = uploadedImage;
+        }
+      } else if (version === 'pro') {
+        if (outfitType === 'single') {
+          if (singleOutfitImage) {
+            requestData.single_outfit_image = singleOutfitImage;
+          }
+          if (singleOutfitBackImage) {
+            requestData.single_outfit_back_image = singleOutfitBackImage;
+          }
+        } else if (outfitType === 'match') {
+          if (topOutfitImage) {
+            requestData.top_outfit_image = topOutfitImage;
+          }
+          if (topOutfitBackImage) {
+            requestData.top_outfit_back_image = topOutfitBackImage;
+          }
+          if (bottomOutfitImage) {
+            requestData.bottom_outfit_image = bottomOutfitImage;
+          }
+          if (bottomOutfitBackImage) {
+            requestData.bottom_outfit_back_image = bottomOutfitBackImage;
+          }
+        }
+      }
+
+      console.log('Sending request data:', requestData);
+      const response = await modelImageGeneration(requestData);
+      console.log('API Response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response images:', response.data?.images);
+      console.log('Response task_id:', response.data?.task_id);
+      
+      if (response && response.data && response.data.images) {
+        onGeneratedData(response.data.images, response.data.task_id || '');
+        console.log('Generated data passed to parent:', response.data.images, response.data.task_id || '');
+      } else if (response && response.images) {
+        onGeneratedData(response.images, response.task_id || '');
+        console.log('Generated data passed to parent (alternative):', response.images, response.task_id || '');
+      } else {
+        console.warn('No images found in response');
+      }
+      
+      setShowGenerateSuccess(true);
+      
+      setTimeout(() => {
+        setIsGenerating(false);
+      }, 100);
+      
+      if (refreshImageRecordsRef && refreshImageRecordsRef.current) {
+        refreshImageRecordsRef.current();
+      }
+    } catch (error) {
+      console.error('Failed to generate model image:', error);
+      setIsGenerating(false);
+    }
   };
+
+  const handleContinueCreating = () => {
+    setVersion('common');
+    setOutfitType('single');
+    setModelType('adult');
+    setSelectedModel(1);
+    setStyleCategory('daily');
+    setSelectedStyle(1);
+    setRatio('1:1');
+    setQuantity(1);
+    setUploadedImage(null);
+    setSingleOutfitImage(null);
+    setSingleOutfitBackImage(null);
+    setTopOutfitImage(null);
+    setTopOutfitBackImage(null);
+    setBottomOutfitImage(null);
+    setBottomOutfitBackImage(null);
+    setCustomSceneText('');
+    setShowCustomSceneInput(false);
+    setShowGenerateSuccess(false);
+    setIsGenerating(false);
+  };
+
+  const handleLoadFromRecord = useCallback((record: any) => {
+    console.log('=== handleLoadFromRecord 开始 ===');
+    console.log('完整的record对象:', record);
+    console.log('record.params:', record.params);
+    console.log('record.params 的所有键:', record.params ? Object.keys(record.params) : 'params为空');
+    console.log('record.params 的完整内容:', JSON.stringify(record.params, null, 2));
+    
+    const params = record.params;
+    console.log('params参数:', params);
+    
+    if (!params) {
+      console.log('params为空，直接返回');
+      return;
+    }
+
+    console.log('version:', params.version);
+    console.log('outfit_type:', params.outfit_type);
+    console.log('model_type:', params.model_type);
+    console.log('selected_model:', params.selected_model);
+    console.log('style_category:', params.style_category);
+    console.log('selected_style:', params.selected_style);
+    console.log('custom_scene_text:', params.custom_scene_text);
+    console.log('ratio:', params.ratio);
+    console.log('quantity:', params.quantity);
+
+    setPendingModelId(params.selected_model || 1);
+    setPendingStyleCategory(params.style_category || 'daily');
+    setPendingStyleId(params.selected_style || 1);
+    setPendingRatio(params.ratio || '1:1');
+    setPendingQuantity(params.quantity || 1);
+
+    if (params.custom_scene_text && params.custom_scene_text.trim()) {
+      console.log('检测到自定义场景，清除风格选择');
+      setPendingStyleId(null);
+    }
+
+    if (params.model_type === 'system') {
+      console.log('触发系统模特按钮点击事件');
+      setModelType('system');
+      if (!hasCalledSystemModelsAPIRef.current) {
+        console.log('系统模特数据未加载过，调用API获取数据');
+        fetchSystemModels(1, 12);
+      }
+    } else if (params.model_type === 'my') {
+      console.log('触发我的模特按钮点击事件');
+      setModelType('my');
+      if (!isLoggedIn) {
+        openAuthModal();
+        return;
+      }
+      if (!hasCalledMyModelsAPIRef.current) {
+        console.log('我的模特数据未加载过，调用API获取数据');
+        fetchMyModels(1, 12);
+      }
+    } else {
+      console.log('设置模特类型为adult');
+      setModelType('adult');
+    }
+
+    if (params.version === 'common') {
+      console.log('处理通用版图片 - 触发通用版按钮点击事件');
+      setVersion('common');
+      console.log('uploaded_image:', params.uploaded_image);
+      console.log('uploaded_image类型:', typeof params.uploaded_image);
+      setUploadedImage(params.uploaded_image || null);
+    } else if (params.version === 'pro') {
+      console.log('处理专业版图片 - 触发专业版按钮点击事件');
+      setVersion('pro');
+      console.log('outfit_type:', params.outfit_type);
+      
+      if (params.outfit_type === 'single') {
+        console.log('处理单件服饰 - 触发单件上身按钮点击事件');
+        setOutfitType('single');
+        console.log('single_outfit_image:', params.single_outfit_image);
+        console.log('single_outfit_back_image:', params.single_outfit_back_image);
+        setSingleOutfitImage(params.single_outfit_image || null);
+        setSingleOutfitBackImage(params.single_outfit_back_image || null);
+      } else if (params.outfit_type === 'match') {
+        console.log('处理搭配服饰 - 触发上下装搭配按钮点击事件');
+        setOutfitType('match');
+        console.log('top_outfit_image:', params.top_outfit_image);
+        console.log('top_outfit_back_image:', params.top_outfit_back_image);
+        console.log('bottom_outfit_image:', params.bottom_outfit_image);
+        console.log('bottom_outfit_back_image:', params.bottom_outfit_back_image);
+        setTopOutfitImage(params.top_outfit_image || null);
+        setTopOutfitBackImage(params.top_outfit_back_image || null);
+        setBottomOutfitImage(params.bottom_outfit_image || null);
+        setBottomOutfitBackImage(params.bottom_outfit_back_image || null);
+      }
+    } else {
+      console.log('未知的version:', params.version);
+    }
+
+    if (params.custom_scene_text && params.custom_scene_text.trim()) {
+      console.log('设置自定义场景:', params.custom_scene_text);
+      setCustomSceneText(params.custom_scene_text);
+      setShowCustomSceneInput(true);
+      setSelectedStyle(null);
+    } else {
+      setCustomSceneText('');
+      setShowCustomSceneInput(false);
+    }
+    
+    console.log('=== handleLoadFromRecord 结束 ===');
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    onResetRef.current = handleContinueCreating;
+  }, [onResetRef]);
+
+  useEffect(() => {
+    if (onLoadFromRecordRef) {
+      onLoadFromRecordRef.current = handleLoadFromRecord;
+    }
+  }, [onLoadFromRecordRef]);
+
+  // 统一处理所有模型类型的 pending 状态
+  useEffect(() => {
+    console.log('useEffect触发 - pendingModelId:', pendingModelId, 'modelType:', modelType);
+    if (pendingModelId !== null) {
+      // 处理所有模型类型，包括 adult、system 和 my
+      if (modelType === 'system' || modelType === 'my') {
+        const models = modelType === 'system' ? systemModels : allMyModels;
+        if (models.length > 0) {
+          console.log('设置待设置的模型ID:', pendingModelId, 'type:', typeof pendingModelId);
+          setSelectedModel(pendingModelId);
+          console.log('setSelectedModel已调用');
+          setStyleCategory(pendingStyleCategory || 'daily');
+          if (pendingStyleId !== null) {
+            setSelectedStyle(pendingStyleId);
+          }
+          setRatio(pendingRatio || '1:1');
+          setQuantity(pendingQuantity || 1);
+          
+          // 确保显示正确数量的模特图片
+          if (modelType === 'system') {
+            // 系统模特：显示5张图片
+            setVisibleSystemModels(models.slice(0, 5));
+          } else if (modelType === 'my') {
+            // 我的模特：显示4张图片
+            setVisibleMyModels(models.slice(0, 4));
+          }
+          
+          // 重置 pending 状态
+          setPendingModelId(null);
+          setPendingStyleCategory(null);
+          setPendingStyleId(null);
+          setPendingRatio(null);
+          setPendingQuantity(null);
+        }
+      } else if (modelType === 'adult') {
+        // 直接处理成人模特类型，不需要等待 API 返回
+        console.log('处理成人模特类型');
+        setSelectedModel(pendingModelId);
+        setStyleCategory(pendingStyleCategory || 'daily');
+        if (pendingStyleId !== null) {
+          setSelectedStyle(pendingStyleId);
+        }
+        setRatio(pendingRatio || '1:1');
+        setQuantity(pendingQuantity || 1);
+        // 重置 pending 状态
+        setPendingModelId(null);
+        setPendingStyleCategory(null);
+        setPendingStyleId(null);
+        setPendingRatio(null);
+        setPendingQuantity(null);
+      }
+    }
+  }, [pendingModelId, modelType, systemModels, allMyModels, pendingStyleCategory, pendingStyleId, pendingRatio, pendingQuantity]);
+
+  
 
   // 预览位置改为基于悬停项的真实几何计算
 
@@ -893,6 +1238,9 @@ export const LeftPanel: React.FC = () => {
                   // 2. We called it before but got 0 models
                   if (!hasCalledSystemModelsAPI || systemModels.length === 0) {
                     fetchSystemModels(1, 12);
+                  } else {
+                    // 确保显示正确数量的系统模特图片
+                    setVisibleSystemModels(systemModels.slice(0, 5));
                   }
                 }}
                 className={clsx(
@@ -937,27 +1285,65 @@ export const LeftPanel: React.FC = () => {
                   <span className="text-[#3713ec] font-medium text-sm">添加模特</span>
                 </div>
               )}
-              {displayedModels.map((model) => (
+              {/* 特殊情况：选中的模型不在前5张中，将其显示在第一个位置 */}
+              {needsSpecialRender && specialRenderModel && (
                 <div 
-                  key={model.id}
-                  id={`main-model-item-${model.id}`}
+                  key={`special-${specialRenderModel.id}`}
+                  id={`main-model-item-special`}
                   onClick={() => {
                     if (modelType === 'my' && !isLoggedIn) {
                       return;
                     }
-                    setSelectedModel(model.id);
+                    setSelectedModel(specialRenderModel.id);
                   }}
-                  onMouseEnter={() => handleMainHover(null as any, model.id)}
+                  onMouseEnter={() => handleMainHover(null as any, specialRenderModel.id)}
                   onMouseLeave={() => handleMainHover(null as any, null)}
                   className={clsx(
                     "aspect-[3/4] rounded-lg overflow-hidden cursor-pointer border-2 transition-all relative",
-                    selectedModel === model.id ? "border-[#3713ec]" : "border-transparent",
-                    "hover:border-[#3713ec]"
+                    "border-[#3713ec]"
                   )}
+                  data-model-id={specialRenderModel.id}
+                  data-selected={true}
                 >
-                  <img src={(model as any).avatar || ((model as any).images && (model as any).images[0]?.file_path) || (model as any).image} alt="Model" className="w-full h-full object-cover" />
+                  <img 
+                    src={(specialRenderModel as any).avatar || ((specialRenderModel as any).images && (specialRenderModel as any).images[0]?.file_path) || (specialRenderModel as any).image} 
+                    alt="Model" 
+                    className="w-full h-full object-cover" 
+                  />
                 </div>
-              ))}
+              )}
+              
+              {/* 正常渲染其他模型，但特殊情况时跳过第一个 */}
+              {displayedModels.map((model, index) => {
+                // 特殊情况时，跳过第一个模型（位置被特殊模型占据）
+                if (needsSpecialRender && index === 0) {
+                  return null;
+                }
+                
+                return (
+                  <div 
+                    key={model.id}
+                    id={`main-model-item-${model.id}`}
+                    onClick={() => {
+                      if (modelType === 'my' && !isLoggedIn) {
+                        return;
+                      }
+                      setSelectedModel(model.id);
+                    }}
+                    onMouseEnter={() => handleMainHover(null as any, model.id)}
+                    onMouseLeave={() => handleMainHover(null as any, null)}
+                    className={clsx(
+                      "aspect-[3/4] rounded-lg overflow-hidden cursor-pointer border-2 transition-all relative",
+                      selectedModel === model.id && !needsSpecialRender ? "border-[#3713ec]" : "border-transparent",
+                      "hover:border-[#3713ec]"
+                    )}
+                    data-model-id={model.id}
+                    data-selected={selectedModel === model.id && !needsSpecialRender}
+                  >
+                    <img src={(model as any).avatar || ((model as any).images && (model as any).images[0]?.file_path) || (model as any).image} alt="Model" className="w-full h-full object-cover" />
+                  </div>
+                );
+              })}
               <div 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1143,13 +1529,36 @@ export const LeftPanel: React.FC = () => {
 
         {/* Sticky Footer Button & Agreement */}
         <div className="sticky bottom-0 left-0 right-0 p-6 pt-2 bg-white z-10 border-t border-gray-50">
-          <button onClick={handleGenerate} className="w-full bg-gradient-to-r from-[#6C5CFF] to-[#5a4cf0] text-white py-3 rounded-full text-base font-bold shadow-lg shadow-brand/30 hover:shadow-brand/40 transition-all flex items-center justify-center gap-2">
-            <span>开始生成</span>
-            <div className="flex items-center bg-white/20 rounded-full px-2 py-0.5 text-xs">
-              <span>30</span>
-              <Coins className="w-3 h-3 ml-1 fill-yellow-400 text-yellow-400" />
+          {isGenerating ? (
+            <button disabled className="w-full bg-gradient-to-r from-[#6C5CFF] to-[#5a4cf0] text-white py-3 rounded-full text-base font-bold shadow-lg shadow-brand/30 hover:shadow-brand/40 transition-all flex items-center justify-center gap-2 opacity-70 cursor-not-allowed">
+              <span>生成中...</span>
+              <div className="flex items-center bg-white/20 rounded-full px-2 py-0.5 text-xs">
+                <span>30</span>
+                <Coins className="w-3 h-3 ml-1 fill-yellow-400 text-yellow-400" />
+              </div>
+            </button>
+          ) : showGenerateSuccess ? (
+            <div className="flex gap-3">
+              <button onClick={handleGenerate} className="flex-1 bg-slate-100 dark:bg-surface-dark text-text-primary-light dark:text-text-primary-dark text-base font-semibold py-2.5 rounded-full flex items-center justify-center gap-2">
+                <span>重新生成</span>
+                <span className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-full px-2 py-0.5 text-sm font-normal">
+                  <span>30</span>
+                  <span className="text-base">🪙</span>
+                </span>
+              </button>
+              <button onClick={handleContinueCreating} className="flex-1 text-white text-base font-semibold py-2.5 rounded-full flex items-center justify-center shadow-lg shadow-primary/30" style={{ backgroundColor: '#3713ec' }}>
+                <span>继续创建</span>
+              </button>
             </div>
-          </button>
+          ) : (
+            <button onClick={handleGenerate} className="w-full bg-gradient-to-r from-[#6C5CFF] to-[#5a4cf0] text-white py-3 rounded-full text-base font-bold shadow-lg shadow-brand/30 hover:shadow-brand/40 transition-all flex items-center justify-center gap-2">
+              <span>开始生成</span>
+              <div className="flex items-center bg-white/20 rounded-full px-2 py-0.5 text-xs">
+                <span>30</span>
+                <Coins className="w-3 h-3 ml-1 fill-yellow-400 text-yellow-400" />
+              </div>
+            </button>
+          )}
           <div className="mt-3 text-center">
             <p className="text-[10px] text-gray-400">
               使用即表示您已阅读并同意 <a href="#" className="text-[#4C3BFF] hover:underline">《衣来图AI服务协议》</a>
@@ -1257,6 +1666,8 @@ export const LeftPanel: React.FC = () => {
                         selectedModel === model.id ? "border-[#3713ec]" : "border-transparent",
                         "hover:border-[#3713ec]"
                       )}
+                      data-model-id={model.id}
+                      data-selected={selectedModel === model.id}
                     >
                       <img src={(model as any).avatar || ((model as any).images && (model as any).images[0]?.file_path) || (model as any).image} alt="Model" className="w-full h-full object-cover" />
                     </div>
@@ -1376,6 +1787,15 @@ export const LeftPanel: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {showValidationOverlay && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[200] animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl px-6 py-4 shadow-2xl animate-in zoom-in duration-200 flex items-center gap-3">
+            <X className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <p className="text-gray-800 font-medium text-base">{validationMessage}</p>
+          </div>
         </div>
       )}
 

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>模特图生成 - 生成结果</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#3713EC",
+                        "background-light": "#F7F8FC",
+                        "background-dark": "#121212",
+                    },
+                    fontFamily: {
+                        display: ["Noto Sans SC", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                    },
+                },
+            },
+        };
+    </script>
+<style>
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100">
+<div class="flex flex-col min-h-screen">
+<header class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+<div class="flex items-center space-x-2">
+<svg class="h-8 w-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<h1 class="text-xl font-bold text-gray-900 dark:text-white">衣来图</h1>
+</div>
+<div class="flex items-center space-x-6 text-sm font-medium text-gray-600 dark:text-gray-300">
+<a class="hover:text-primary" href="#">联系客服</a>
+<a class="hover:text-primary" href="#">帮助中心</a>
+<a class="hover:text-primary" href="#">小程序</a>
+<div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
+<a class="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-md hover:bg-primary/90" href="#">登录/注册</a>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<aside class="w-60 bg-white dark:bg-gray-900 p-4 flex flex-col justify-between flex-shrink-0">
+<nav class="flex flex-col space-y-2">
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">home</span>
+                    首页
+                </a>
+<a class="flex items-center px-4 py-3 bg-primary/10 text-primary rounded-lg font-semibold" href="#">
+<span class="material-icons-outlined mr-3">auto_awesome</span>
+                    模特图生成
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">texture</span>
+                    白底图生成
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">swap_horiz</span>
+                    模特换装
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">face_retouching_natural</span>
+                    模特换脸
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">accessibility_new</span>
+                    姿势裂变
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">color_lens</span>
+                    服装换色
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">photo_size_select_large</span>
+                    扩图
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">hd</span>
+                    变清晰
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">auto_fix_high</span>
+                    万能改图
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3">history</span>
+                    生图记录
+                </a>
+</nav>
+<div class="pt-4 border-t border-gray-200 dark:border-gray-700"></div>
+</aside>
+<main class="flex-1 flex overflow-hidden border-l border-gray-200 dark:border-gray-800">
+<div class="w-[450px] flex-shrink-0 bg-white dark:bg-gray-900 p-4 flex flex-col overflow-y-auto">
+<div class="flex-1 space-y-6">
+<h2 class="text-lg font-semibold text-left text-gray-800 dark:text-gray-200">模特图生成</h2>
+<div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-full">
+<button class="flex-1 py-2 text-sm font-medium bg-white dark:bg-gray-700 text-primary rounded-full shadow-sm">通用版</button>
+<button class="flex-1 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">专业版</button>
+</div>
+<div class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl bg-gray-100 dark:bg-gray-800">
+<span class="material-symbols-outlined text-4xl text-primary mb-2">add_photo_alternate</span>
+<p class="font-semibold text-gray-900 dark:text-white text-base">上传服饰实拍图</p>
+<p class="text-xs text-gray-500 dark:text-gray-400">点击/拖拽图片至此处</p>
+</div>
+<div class="space-y-3">
+<h2 class="text-base font-semibold text-gray-800 dark:text-gray-200">选择模特类型</h2>
+<div class="grid grid-cols-2 gap-2">
+<button class="w-full h-10 text-sm font-medium bg-primary/10 text-primary rounded-full">成人</button>
+<button class="w-full h-10 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full">儿童</button>
+</div>
+<div class="grid grid-cols-3 gap-3">
+<img alt="Model in pink puffer jacket front view" class="w-full aspect-[3/4] object-cover rounded-lg ring-2 ring-primary cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmFx42Z3dUvpkrX5GFR0ndn4qcJ24cYSJO4yFa0LblWvA-Fcdi7IXSArSaqS4T6lpQugEjGYowMs-eRlouG3OuWXCJzVmEsiZeSyl6ae5XNDMRnhP-pS22t7mybWzugk1rrPcLOJxP89Tqi3X1eTa65y7T0j-XnwEEcOxYR-Kv3w9v7Y8wZZVTotoZEj0NyNkoXtDKAEjbYdwjxTmz-W0SDEEOwlU52oaCc-1gs6-AnteAGrRpK9YMJY0xINPGgGGHQCSA8H0hM-AV"/>
+<img alt="Model in pink puffer jacket back view" class="w-full aspect-[3/4] object-cover rounded-lg cursor-pointer hover:opacity-75" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBBWee5XJU3NfGHSrlQMvTy_wQiHz3hiKYRU__m0_2YdDto-Udsmhg7OreW1ggLP36NHjnOeiqxUC3lIg1-6FfgCh5U9nydgK_m9GlUD-ozH8RbcDaHXorPkmeO1qINfiBA5wkMunBEKVSPxcttUKQU7N_5LP1-9xc17AoSXumxl5mewBD6SnpNuXgffBoZ9uz7C5sQgly2KvHBJZ9tsFMVIuxRCr94ymZYcTL6VAcSaBKnNCCuRyI6kAfYv_KYNnrynmVAXaa3aSf"/>
+<img alt="Model in pink puffer jacket side view" class="w-full aspect-[3/4] object-cover rounded-lg cursor-pointer hover:opacity-75" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXQ4WKCL9u82oUmzL03r-1D81Xm2NZ5abWXlIWo5YtE0xzHVck4a_fd59tzaCjbI9SFap8RRhY69vT94FJr0gJH7xSABRzObrtVYl7lboi0omei-64qLusxqf8Swz4uhwt2INSrw7LXbUZ2xI3kgg-6g6sXbYWGIfHgyjQlU3CWgV0C67Ni9PKEOD2Doubm8gW0exfwaMcNdrfosTcMAom0YEPTtLLB20t4fd3_VICUkTpukDRaepbZAxWJI2JJiypY9oBmTmaqR2u"/>
+<img alt="Model in pink puffer jacket three quarter view" class="w-full aspect-[3/4] object-cover rounded-lg cursor-pointer hover:opacity-75" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiTuau-KSX7rZn3GkNMp9JGj5DPTjKjXrroKrvSevZ2X9jt3vgrsZWA9kRWcfkXfn3UCrBVm8aI6dCH013_nbMMqnue5zczWBaZMnzdA1V86XsBBEYJqQVsY90qYCKlRYp0gyrYgSqx6gW9oBw9hM5NUTbniQwAsYb-IbDO4U_iQZohteHWRroTi4WmK5sxzl03-rUimslcBdfceboTNIdM0CBtvh9pbZZBQEOSoXTcNKsipPVAI042u1kY4rbJx3P-gcVGRXA_6q4"/>
+<img alt="Model in green puffer jacket" class="w-full aspect-[3/4] object-cover rounded-lg cursor-pointer hover:opacity-75" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKeh7gMGo0ckYn3Qn5UiNE0XC37I54ILCn4hvqLpKpMJKLYcvrSBV81VaiaizLYn9WoqVQ9xGH_vjzHTyHGay6wxqXJRfiFeUzFWGlDYhG4_iGY2DtHhiYo1tEHfzBy00tOUpSMiHI4dTdkcqs9oSh7K1NODGRVzt2qVHpvY8HnXF9Xhgf3y7WJL6UFDNfd_qGnM4JdO8RKuS1hSwersUo-vafiQkHhbKGZ2oKDcusheqsMcWdWLMaDYD44HLI2GitKv731uyW79_t"/>
+<div class="w-full aspect-[3/4] flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400 cursor-pointer">
+                                更多 &gt;
+                            </div>
+</div>
+</div>
+<div class="space-y-3">
+<h2 class="text-base font-semibold text-gray-800 dark:text-gray-200">选择风格场景</h2>
+<div class="grid grid-cols-3 gap-2">
+<button class="h-10 text-sm font-medium bg-primary/10 text-primary rounded-full px-2">日常生活风</button>
+<button class="h-10 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full px-2">时尚杂志风</button>
+<button class="h-10 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full px-2">运动活力风</button>
+</div>
+<div class="relative">
+<select class="w-full appearance-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-4 text-gray-600 dark:text-gray-300 focus:ring-primary/50 focus:ring-2">
+<option>全部</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+</div>
+<div class="grid grid-cols-3 gap-3">
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img alt="Scene of a man in an urban setting" class="w-full aspect-square object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSoSjhRGqN58KrD1BAciikMQjf_SMwYkaOSA7xREv5aMKv2uY9mIxmyYhK9t9gWsrBGfYlzJU3YDS2mxrmRXdW93cVayKPtY_SCgTpC7JzrlaSiv24mI-yGhOMPqiILC733OfPrC_af61ALNenbPCyJ3MAb8JwxrAZH-Kvep25Wpem9zm3SlsrGV_dIesPrzq7QbHcvwBkUEblFS8P4PFuZZyZigr3jZ7vi8BYozf-Rt3utLnzZRfpN2yQwSaFNMXuKxH_Ek1Lnl24"/>
+<div class="absolute inset-x-0 bottom-0 bg-black/50 p-2 text-white text-xs">日系风-城市街拍</div>
+<div class="absolute inset-0 ring-2 ring-primary ring-inset pointer-events-none"></div>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img alt="Scene of a woman shopping" class="w-full aspect-square object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnPL9acOTYyih1mEQyBzW-1zBlG8pBya8R0Ql6dMbAQOSymZQQdbaoua1szwcIVga_Vk-gAk90C9syw8J0sYrm1e8qnP5XrCyZG6rvqZiMdqx2xLekeJTiCyPm8zKq3zRziJ5gCfwDMaG5FuA0PP7aFTA0kSRgh-4QG14FObvHmOPspTmCtDwd96GijYBIwGaDRi3n7WNMobAyR90LFUKuKXNTCHd4fdN-3bNJKvDXElagkWGfPBJyNiaDk2o-27VhhpXiHOLrKlgC"/>
+<div class="absolute inset-x-0 bottom-0 bg-black/50 p-2 text-white text-xs">日系风-室内家居</div>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img alt="Scene of a person in a minimalist interior" class="w-full aspect-square object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8AdiWRAM6cy8ea5eifXYkmyLid4QjH4wV197AkwGvTS24U5zBIG9o_7xQh7CI1yxSxeeCftDlrAChGbXrsxl1wJhplglALLKkaqdr0PpiQNEbnlPpoGY59_Bg9AfMy3AS4F88S2fh55bV_UFm7qYR3M5pFI-Vji9vxe8BW2MW9iZPxJHja0OEtg6YiFErWWpd-fB0C3jC56unfZoASd-KjZAbLyfuqHVJXUE9Dwj4Twu_aolVNK9Ksf0Z01oajz1xw1PFPck_Yw0s"/>
+<div class="absolute inset-x-0 bottom-0 bg-black/50 p-2 text-white text-xs">日系风-纯色背景</div>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img alt="Scene of a person doing yoga outdoors" class="w-full aspect-square object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxy1mge0rIkrFW1il4-xllLZ3DkUX3ozk-jE4XCDjAu8JGZYRoVpGSAfGL4X5cZkr9j3CASIOBpmcbnHhEkn3rYAegp664RFtxv287kIoIGzd5MOcBbUpg38aK0nMVrKDsH4YI01qQPpwH05r0BJMWFaSSwfnY3lQmpTawOGtqMG02bMH2FZikXmhKEpHzQfq9Jv8eSq7hcK_gnWwmOB-UqWH5ADqeWFkibhANOMN-2-XV03prpr7FJdsdVW4xn-JYwxr568ZtdSMO"/>
+<div class="absolute inset-x-0 bottom-0 bg-black/50 p-2 text-white text-xs">日系风-咖啡厅</div>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img alt="Scene of a person in a minimalist interior" class="w-full aspect-square object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8AdiWRAM6cy8ea5eifXYkmyLid4QjH4wV197AkwGvTS24U5zBIG9o_7xQh7CI1yxSxeeCftDlrAChGbXrsxl1wJhplglALLKkaqdr0PpiQNEbnlPpoGY59_Bg9AfMy3AS4F88S2fh55bV_UFm7qYR3M5pFI-Vji9vxe8BW2MW9iZPxJHja0OEtg6YiFErWWpd-fB0C3jC56unfZoASd-KjZAbLyfuqHVJXUE9Dwj4Twu_aolVNK9Ksf0Z01oajz1xw1PFPck_Yw0s"/>
+<div class="absolute inset-x-0 bottom-0 bg-black/50 p-2 text-white text-xs">ins风-花海</div>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img alt="Scene of a man in an urban setting" class="w-full aspect-square object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSoSjhRGqN58KrD1BAciikMQjf_SMwYkaOSA7xREv5aMKv2uY9mIxmyYhK9t9gWsrBGfYlzJU3YDS2mxrmRXdW93cVayKPtY_SCgTpC7JzrlaSiv24mI-yGhOMPqiILC733OfPrC_af61ALNenbPCyJ3MAb8JwxrAZH-Kvep25Wpem9zm3SlsrGV_dIesPrzq7QbHcvwBkUEblFS8P4PFuZZyZigr3jZ7vi8BYozf-Rt3utLnzZRfpN2yQwSaFNMXuKxH_Ek1Lnl24"/>
+<div class="absolute inset-x-0 bottom-0 bg-black/50 p-2 text-white text-xs">ins风-海边沙滩</div>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img alt="Scene of a woman shopping" class="w-full aspect-square object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnPL9acOTYyih1mEQyBzW-1zBlG8pBya8R0Ql6dMbAQOSymZQQdbaoua1szwcIVga_Vk-gAk90C9syw8J0sYrm1e8qnP5XrCyZG6rvqZiMdqx2xLekeJTiCyPm8zKq3zRziJ5gCfwDMaG5FuA0PP7aFTA0kSRgh-4QG14FObvHmOPspTmCtDwd96GijYBIwGaDRi3n7WNMobAyR90LFUKuKXNTCHd4fdN-3bNJKvDXElagkWGfPBJyNiaDk2o-27VhhpXiHOLrKlgC"/>
+<div class="absolute inset-x-0 bottom-0 bg-black/50 p-2 text-white text-xs">ins风-公园长椅</div>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img alt="Scene of a person doing yoga outdoors" class="w-full aspect-square object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxy1mge0rIkrFW1il4-xllLZ3DkUX3ozk-jE4XCDjAu8JGZYRoVpGSAfGL4X5cZkr9j3CASIOBpmcbnHhEkn3rYAegp664RFtxv287kIoIGzd5MOcBbUpg38aK0nMVrKDsH4YI01qQPpwH05r0BJMWFaSSwfnY3lQmpTawOGtqMG02bMH2FZikXmhKEpHzQfq9Jv8eSq7hcK_gnWwmOB-UqWH5ADqeWFkibhANOMN-2-XV03prpr7FJdsdVW4xn-JYwxr568ZtdSMO"/>
+<div class="absolute inset-x-0 bottom-0 bg-black/50 p-2 text-white text-xs">ins风-公路</div>
+</div>
+<div class="w-full aspect-square flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400 cursor-pointer">
+                                更多
+                            </div>
+</div>
+</div>
+<div class="space-y-3">
+<h2 class="text-base font-semibold text-gray-800 dark:text-gray-200">选择图片比例</h2>
+<div class="grid grid-cols-3 gap-2">
+<button class="py-2.5 text-sm font-medium bg-primary/10 text-primary rounded-full">1:1</button>
+<button class="py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full">2:3</button>
+<button class="py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full">3:4</button>
+</div>
+</div>
+<div class="space-y-3">
+<h2 class="text-base font-semibold text-gray-800 dark:text-gray-200">选择图片数量</h2>
+<div class="grid grid-cols-5 gap-2">
+<button class="py-2.5 text-sm font-medium bg-primary/10 text-primary rounded-full">1</button>
+<button class="py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full">2</button>
+<button class="py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full">4</button>
+<button class="py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full">6</button>
+<button class="py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full">9</button>
+</div>
+</div>
+</div>
+<div class="sticky bottom-0 bg-white dark:bg-gray-900 py-4 border-t border-gray-200 dark:border-gray-800 -mx-4 px-4">
+<button class="w-full bg-primary text-white font-bold py-3 px-4 rounded-full shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all flex items-center justify-center space-x-2">
+<span>重新生成</span>
+<div class="flex items-center space-x-1 bg-white/20 px-2 py-0.5 rounded-full text-xs">
+<span>30</span>
+<span class="w-4 h-4 rounded-full bg-yellow-400 text-yellow-800 flex items-center justify-center font-bold text-xs">C</span>
+</div>
+</button>
+</div>
+</div>
+<div class="flex-1 bg-background-light dark:bg-background-dark overflow-y-auto relative">
+<div class="min-h-full flex flex-col items-center justify-center p-6">
+<div class="w-full max-w-lg">
+<h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">生成结果</h3>
+<div class="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-sm">
+<div class="grid grid-cols-2 gap-4 mb-4">
+<img alt="Generated model image 1" class="w-full aspect-[3/4] object-cover rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmFx42Z3dUvpkrX5GFR0ndn4qcJ24cYSJO4yFa0LblWvA-Fcdi7IXSArSaqS4T6lpQugEjGYowMs-eRlouG3OuWXCJzVmEsiZeSyl6ae5XNDMRnhP-pS22t7mybWzugk1rrPcLOJxP89Tqi3X1eTa65y7T0j-XnwEEcOxYR-Kv3w9v7Y8wZZVTotoZEj0NyNkoXtDKAEjbYdwjxTmz-W0SDEEOwlU52oaCc-1gs6-AnteAGrRpK9YMJY0xINPGgGGHQCSA8H0hM-AV"/>
+<img alt="Generated model image 2" class="w-full aspect-[3/4] object-cover rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKeh7gMGo0ckYn3Qn5UiNE0XC37I54ILCn4hvqLpKpMJKLYcvrSBV81VaiaizLYn9WoqVQ9xGH_vjzHTyHGay6wxqXJRfiFeUzFWGlDYhG4_iGY2DtHhiYo1tEHfzBy00tOUpSMiHI4dTdkcqs9oSh7K1NODGRVzt2qVHpvY8HnXF9Xhgf3y7WJL6UFDNfd_qGnM4JdO8RKuS1hSwersUo-vafiQkHhbKGZ2oKDcusheqsMcWdWLMaDYD44HLI2GitKv731uyW79_t"/>
+</div>
+<div class="flex items-center space-x-3">
+<button class="flex-1 bg-primary text-white font-semibold py-2.5 px-4 rounded-full shadow-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors flex items-center justify-center space-x-2">
+<span class="material-symbols-outlined">download</span>
+<span>下载全部内容</span>
+</button>
+<div class="relative group">
+<button class="flex flex-col items-center justify-center w-12 h-12 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-primary/70 dark:text-primary/70">
+<span class="material-symbols-outlined text-[22px] fill-current">check_circle</span>
+<span class="text-[10px] font-medium leading-none mt-0.5">已反馈</span>
+</button>
+<div class="absolute bottom-full right-0 mb-3 w-[320px] bg-white dark:bg-gray-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 dark:border-gray-700 p-5 invisible opacity-0 translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 z-20 origin-bottom-right">
+<div class="flex items-center space-x-2 mb-3">
+<span class="material-symbols-outlined text-green-500 text-lg">task_alt</span>
+<span class="text-sm font-semibold text-gray-800 dark:text-gray-200">感谢您的反馈</span>
+</div>
+<div class="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed tracking-wide border-b border-gray-100 dark:border-gray-700 pb-3">
+                                            您提交的问题已收到，我们将尽快优化。
+                                        </div>
+<div class="mb-3">
+<p class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-2">已选问题</p>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 text-xs font-medium bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 rounded-md border border-red-100 dark:border-red-800/50">人物变形</span>
+<span class="px-2 py-1 text-xs font-medium bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 rounded-md border border-red-100 dark:border-red-800/50">细节模糊</span>
+</div>
+</div>
+<div>
+<p class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-2">您的描述</p>
+<div class="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                                                面部特征有些扭曲，特别是眼睛部分不够清晰，希望能改进一下细节生成的质量。
+                                            </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+
+</body></html>

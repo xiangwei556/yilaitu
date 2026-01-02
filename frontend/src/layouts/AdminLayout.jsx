@@ -12,6 +12,7 @@ import {
   LogoutOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 
@@ -69,6 +70,11 @@ const AdminLayout = () => {
       key: '/admin/orders',
       icon: <ShoppingCartOutlined />,
       label: '订单管理',
+    },
+    {
+      key: '/admin/feedback',
+      icon: <MessageOutlined />,
+      label: '反馈管理',
     },
     {
       key: '/admin/notifications',

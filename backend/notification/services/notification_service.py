@@ -10,6 +10,8 @@ class NotificationService:
         # 1. Save to DB
         db_msg = Message(**message_in.dict())
         db.add(db_msg)
+        db.commit()
+        db.refresh(db_msg)
         
         # 2. Update Unread Count
         unread_record = db.query(UnreadMessageCount).filter(UnreadMessageCount.user_id == message_in.receiver_id).first()
@@ -20,7 +22,6 @@ class NotificationService:
             unread_record.count += 1
             
         db.commit()
-        db.refresh(db_msg)
         
         # 3. Publish to Redis
         try:
