@@ -7,7 +7,7 @@ class WebSocketService {
   private ws: WebSocket | null = null;
   private url: string;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = Infinity;
   private reconnectTimeout: any = null;
   private messageHandlers: MessageHandler[] = [];
   private userId: number | null = null;
@@ -15,6 +15,13 @@ class WebSocketService {
   private lastMessageId: any = null;
   private lastMessageKey: string | null = null;
   private lastMessageTimestamp: number | null = null;
+  
+  private heartbeatInterval: any = null;
+  private heartbeatTimeout: any = null;
+  private missedHeartbeats = 0;
+  private readonly HEARTBEAT_INTERVAL = 30000;
+  private readonly HEARTBEAT_TIMEOUT = 5000;
+  private readonly MAX_MISSED_HEARTBEATS = 3;
   
   private static instance: WebSocketService;
   
@@ -53,10 +60,18 @@ class WebSocketService {
       ws.onopen = () => {
         console.log('=== WebSocket connected ===', 'url:', wsUrl);
         this.reconnectAttempts = 0;
+        this.missedHeartbeats = 0;
+        this.startHeartbeat();
       };
       
       ws.onmessage = (event) => {
         console.log('=== WebSocket message received ===', 'event:', event);
+        
+        if (event.data === 'pong') {
+          this.missedHeartbeats = 0;
+          return;
+        }
+        
         try {
           const data = JSON.parse(event.data);
           this.handleMessage(data);
@@ -68,6 +83,7 @@ class WebSocketService {
       
       ws.onclose = (event) => {
         console.log('=== WebSocket disconnected ===', 'code:', event.code, 'reason:', event.reason);
+        this.stopHeartbeat();
         
         if (event.code !== 1000) {
           this.ws = null;
@@ -92,13 +108,43 @@ class WebSocketService {
   }
 
   public disconnect() {
+    console.log('=== WebSocketService.disconnect called ===');
+    this.stopHeartbeat();
+    
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
     if (this.ws) {
-      this.ws.close();
+      this.ws.close(1000, 'User disconnected');
       this.ws = null;
+    }
+  }
+
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    
+    this.heartbeatInterval = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send('ping');
+        this.missedHeartbeats++;
+        
+        if (this.missedHeartbeats > this.MAX_MISSED_HEARTBEATS) {
+          console.warn('Too many missed heartbeats, closing connection');
+          this.ws.close(1006, 'Too many missed heartbeats');
+        }
+      }
+    }, this.HEARTBEAT_INTERVAL);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+    if (this.heartbeatTimeout) {
+      clearTimeout(this.heartbeatTimeout);
+      this.heartbeatTimeout = null;
     }
   }
 
@@ -227,10 +273,13 @@ class WebSocketService {
       this.reconnectAttempts++;
       const timeout = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
       
+      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${timeout}ms...`);
+      
       this.reconnectTimeout = setTimeout(() => {
-        console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
         this.connect(this.userId!);
       }, timeout);
+    } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('Max reconnection attempts reached, giving up');
     }
   }
 }

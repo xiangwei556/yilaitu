@@ -4,6 +4,31 @@ from decimal import Decimal
 from datetime import datetime
 from backend.points.models.points import PointsAccount, PointsTransaction
 from backend.notification.services.websocket_manager import manager
+from backend.passport.app.db.redis import get_redis
+import asyncio
+import json
+
+
+async def send_points_update_via_redis(user_id: int, points: float):
+    """
+    通过 Redis Pub/Sub 发送积分更新通知
+    
+    Args:
+        user_id: 用户ID
+        points: 更新后的积分数量
+    """
+    try:
+        redis = await get_redis()
+        payload = {
+            "type": "points_update",
+            "user_id": user_id,
+            "points": points,
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        await redis.publish("notification_channel", json.dumps(payload))
+        print(f"Points update sent via Redis: user_id={user_id}, points={points}")
+    except Exception as e:
+        print(f"Failed to publish points update to Redis: {e}")
 
 
 class PointsService:
@@ -87,3 +112,55 @@ class PointsService:
             PointsAccount: 积分账户，不存在则返回None
         """
         return db.query(PointsAccount).filter(PointsAccount.user_id == user_id).first()
+    
+    @staticmethod
+    def add_points(
+        db: Session,
+        user_id: int,
+        amount: Decimal,
+        source_type: str,
+        source_id: Optional[str] = None,
+        remark: Optional[str] = None
+    ) -> PointsTransaction:
+        """
+        增加用户积分
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            amount: 增加积分数量
+            source_type: 来源类型
+            source_id: 来源ID
+            remark: 备注
+            
+        Returns:
+            PointsTransaction: 交易记录
+        """
+        if amount <= 0:
+            raise ValueError("增加积分数量必须大于0")
+        
+        account = db.query(PointsAccount).filter(PointsAccount.user_id == user_id).first()
+        
+        if not account:
+            account = PointsAccount(user_id=user_id, balance_permanent=0, balance_limited=0)
+            db.add(account)
+        
+        account.balance_permanent += amount
+        
+        transaction = PointsTransaction(
+            user_id=user_id,
+            type="earn",
+            amount=amount,
+            balance_after=account.balance_permanent + account.balance_limited,
+            source_type=source_type,
+            source_id=source_id,
+            remark=remark,
+            created_at=datetime.now()
+        )
+        
+        db.add(transaction)
+        db.commit()
+        db.refresh(account)
+        db.refresh(transaction)
+        
+        return transaction

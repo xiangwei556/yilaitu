@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Button } from 'antd';
 import { X, Calendar, ArrowRight, Image as ImageIcon, Download as DownloadIcon } from 'lucide-react';
 import { Message } from '../api/message';
+import { getOriginalImageRecord } from '../api/originalImageRecord';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import dayjs from 'dayjs';
 
 interface MessageDetailProps {
@@ -13,14 +16,103 @@ interface MessageDetailProps {
 }
 
 export const MessageDetail: React.FC<MessageDetailProps> = ({ open, onClose, message, source = 'messageCenter', onOpenMessageCenter }) => {
+  const [taskData, setTaskData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  useEffect(() => {
+    if (open && message.extra_data) {
+      try {
+        const extraData = JSON.parse(message.extra_data);
+        if (extraData.task_id) {
+          loadTaskData(extraData.task_id);
+        }
+      } catch (e) {
+        console.error('Failed to parse extra_data:', e);
+      }
+    }
+  }, [open, message.extra_data]);
+
+  const loadTaskData = async (taskId: number) => {
+    setLoading(true);
+    try {
+      const response = await getOriginalImageRecord(taskId);
+      setTaskData(response);
+    } catch (error) {
+      console.error('Failed to load task data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    if (!taskData?.images || taskData.images.length === 0) {
+      alert('没有可下载的图片');
+      return;
+    }
+
+    setDownloading(true);
+    try {
+      const zip = new JSZip();
+
+      const downloadPromises = taskData.images.map(async (img: any, index: number) => {
+        try {
+          const imageUrl = img.url || img.thumbnail;
+          const response = await fetch(imageUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const blob = await response.blob();
+          const urlParts = imageUrl.split('/');
+          const fileName = urlParts[urlParts.length - 1] || `image_${index + 1}.jpg`;
+          zip.file(fileName, blob);
+        } catch (error) {
+          console.error(`Failed to download image ${index + 1}:`, error);
+        }
+      });
+
+      await Promise.all(downloadPromises);
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const taskId = message.extra_data ? JSON.parse(message.extra_data).task_id : 'unknown';
+      saveAs(content, `task_images_${taskId}_${Date.now()}.zip`);
+    } catch (error) {
+      console.error('Failed to download images:', error);
+      alert('下载失败，请重试');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const handleBackToList = () => {
-    // Close the current detail modal first
     onClose();
     
-    // If the detail was opened from header, open the full message center
     if (source === 'header' && onOpenMessageCenter) {
       onOpenMessageCenter();
     }
+  };
+
+  const getMainContent = () => {
+    if (message.extra_data) {
+      try {
+        const extraData = JSON.parse(message.extra_data);
+        if (extraData.model_id === 1) {
+          const imageCount = taskData?.images?.length || 0;
+          return (
+            <div className="text-base text-gray-600 dark:text-gray-300 leading-7 space-y-4">
+              <p className="font-medium text-gray-900 dark:text-white">尊敬的用户：</p>
+              <p>您好！您于今日上午提交的"模特换装"生图任务已顺利完成智能处理。我们的AI引擎已为您精心生成了多张高品质的效果图，您可以根据需求选择最满意的一张作为最终产品图。</p>
+              <p>本次任务共生成了 <span className="font-semibold text-gray-900 dark:text-white">{imageCount} 张</span> 高清结果图，系统已自动为您保存至云端相册。您可以直接点击下方附件图片预览大图，或前往"生图记录"页面进行批量下载和管理。请注意，生成的图片将在云端保留30天，请及时下载保存。</p>
+              <p>如有任何疑问或需要进一步的调整，请随时联系我们的在线客服。</p>
+              <p>感谢您使用衣来图智能生图服务！</p>
+            </div>
+          );
+        }
+      } catch (e) {
+        console.error('Failed to parse extra_data:', e);
+      }
+    }
+    return <div className="text-base text-gray-600 dark:text-gray-300 leading-7 space-y-4 whitespace-pre-wrap">{message.content}</div>;
   };
 
   return (
@@ -28,7 +120,7 @@ export const MessageDetail: React.FC<MessageDetailProps> = ({ open, onClose, mes
       open={open}
       onCancel={onClose}
       footer={null}
-      width={800}
+      width={896}
       centered
       className="rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800"
       closeIcon={null}
@@ -60,19 +152,15 @@ export const MessageDetail: React.FC<MessageDetailProps> = ({ open, onClose, mes
         </button>
       </div>
       
-      {/* Content Area */}
       <div className="flex-1 p-8 overflow-y-auto">
         <style>{`
-          /* Hide scrollbar for Chrome, Safari and Opera */
           .flex-1.overflow-y-auto::-webkit-scrollbar {
             display: none;
           }
-          /* Hide scrollbar for IE, Edge and Firefox */
           .flex-1.overflow-y-auto {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
           }
-          /* Material Icons */
           @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
           .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -89,7 +177,7 @@ export const MessageDetail: React.FC<MessageDetailProps> = ({ open, onClose, mes
               </span>
               <span className="h-1 w-1 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
               <span className="text-[#3713EC] font-medium bg-[#3713EC]/5 px-2 py-0.5 rounded text-xs border border-[#3713EC]/10">
-                {message.type === 'system' ? '系统通知' : 
+                {message.type === 'task' || message.type === 'system' ? '系统通知' : 
                  message.type === 'business' ? '业务消息' : '私信'}
               </span>
             </div>
@@ -98,12 +186,32 @@ export const MessageDetail: React.FC<MessageDetailProps> = ({ open, onClose, mes
         
         <div className="h-px bg-gray-100 dark:bg-gray-800 mb-6"></div>
         
-        <div className="text-base text-gray-600 dark:text-gray-300 leading-7 space-y-4 whitespace-pre-wrap">
-          {message.content}
-        </div>
+        {getMainContent()}
+
+        {taskData?.images && taskData.images.length > 0 && (
+          <div className="mt-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-100 dark:border-gray-700/50">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center">
+                <span className="material-symbols-outlined text-lg mr-2 text-gray-500">image</span>
+                相关附件 ({taskData.images.length})
+              </h4>
+              <button className="text-xs font-medium text-primary hover:underline flex items-center">
+                <span className="material-symbols-outlined text-sm mr-1">download</span>
+                打包下载
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {taskData.images.map((img: any, index: number) => (
+                <div key={index} className="aspect-square rounded-lg overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 relative group cursor-pointer shadow-sm hover:shadow-md transition-all">
+                  <img alt={`Generated Result ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src={img.url || img.thumbnail} />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       
-      {/* Actions */}
       <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 flex justify-end gap-3 rounded-b-2xl">
         <Button 
           onClick={handleBackToList}

@@ -51,7 +51,11 @@ export const Header: React.FC = () => {
         fetchUnread();
       }
     } else {
-      userIdRef.current = null;
+      if (userIdRef.current !== null) {
+        console.log('=== Disconnecting WebSocket (user logged out) ===');
+        webSocketService.disconnect();
+        userIdRef.current = null;
+      }
     }
   }, [isLoggedIn, user?.id]);
 
@@ -102,13 +106,6 @@ export const Header: React.FC = () => {
       document.removeEventListener('notificationClick', handleNotificationClick as EventListener);
     };
   }, [isLoggedIn]);
-
-  useEffect(() => {
-    return () => {
-      console.log('=== Header cleanup - disconnecting WebSocket ===');
-      webSocketService.disconnect();
-    };
-  }, []);
 
   const openMembershipModal = (tab: 'membership' | 'points' = 'membership') => {
     setDefaultTab(tab);

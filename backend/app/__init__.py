@@ -23,16 +23,16 @@ def init_tos_uploader():
     global _tos_uploader
     try:
         from .config import TOSConfig, tos_config
-        from .utils.tos_utils import TOSUploader
+        from .utils.tos_utils import TOSClient
         
         # 优先使用CSV配置文件路径（如果配置了）
         if hasattr(tos_config, 'CSV_CONFIG_PATH') and tos_config.CSV_CONFIG_PATH:
             logger.info(f'尝试从CSV文件初始化TOS上传器: {tos_config.CSV_CONFIG_PATH}')
-            _tos_uploader = TOSUploader(config_csv_path=tos_config.CSV_CONFIG_PATH)
+            _tos_uploader = TOSClient(config_csv_path=tos_config.CSV_CONFIG_PATH)
         else:
             # 使用直接配置的参数
             logger.info('使用配置文件参数初始化TOS上传器')
-            _tos_uploader = TOSUploader(
+            _tos_uploader = TOSClient(
                 ak=tos_config.ACCESS_KEY,
                 sk=tos_config.SECRET_KEY,
                 endpoint=tos_config.ENDPOINT,

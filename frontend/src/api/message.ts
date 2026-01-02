@@ -19,11 +19,11 @@ export interface MessageListResponse {
 }
 
 export const getMyMessages = (params: { page: number; page_size: number; status?: string; type?: string; id?: number }) => {
-  return request.get<MessageListResponse>('/message/my', { params });
+  return request.get('/message/my', { params }) as any as Promise<MessageListResponse>;
 };
 
 export const getUnreadCount = () => {
-  return request.get<{ count: number }>('/message/my/count');
+  return request.get('/message/my/count') as any as Promise<{ count: number }>;
 };
 
 export const markMessageRead = (id: number) => {

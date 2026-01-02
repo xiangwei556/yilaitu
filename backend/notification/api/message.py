@@ -114,6 +114,14 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
     await manager.connect(websocket, user_id)
     try:
         while True:
-            await websocket.receive_text()
+            data = await websocket.receive_text()
+            
+            # Handle heartbeat ping/pong
+            if data == 'ping':
+                await websocket.send_text('pong')
+                continue
     except WebSocketDisconnect:
+        manager.disconnect(websocket, user_id)
+    except Exception as e:
+        print(f"WebSocket error for user {user_id}: {e}")
         manager.disconnect(websocket, user_id)

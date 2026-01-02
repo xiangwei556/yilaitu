@@ -41,7 +41,7 @@ class OriginalImageRecordService:
                     db=db,
                     user_id=user_id,
                     amount=cost_integral,
-                    source_type="image_generation",
+                    source_type=str(model_id),
                     remark="生图消耗积分"
                 )
                 points_transactions_id = transaction.id
@@ -89,7 +89,7 @@ class OriginalImageRecordService:
         limit: int = 100
     ) -> List[OriginalImageRecord]:
         """
-        根据用户ID获取生图记录列表
+        根据用户ID获取生图记录列表（使用offset分页，不推荐用于大量数据）
         
         Args:
             db: 数据库会话
@@ -103,6 +103,50 @@ class OriginalImageRecordService:
         return db.query(OriginalImageRecord).filter(
             OriginalImageRecord.user_id == user_id
         ).order_by(OriginalImageRecord.create_time.desc()).offset(skip).limit(limit).all()
+    
+    @staticmethod
+    def get_records_by_user_id_cursor(
+        db: Session,
+        user_id: int,
+        cursor: Optional[int] = None,
+        limit: int = 100,
+        model_id: Optional[int] = None
+    ) -> List[OriginalImageRecord]:
+        """
+        根据用户ID获取生图记录列表（使用游标分页，性能更好）
+        优化：减少limit值，避免排序内存不足
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            cursor: 游标ID（上一页最后一条记录的ID），首次加载为None
+            limit: 返回记录数（限制为较小值避免内存问题）
+            model_id: 模特ID，如果提供则只返回该模特的记录
+            
+        Returns:
+            List[OriginalImageRecord]: 生图记录列表
+        """
+        # 限制最大返回数量，避免排序内存不足
+        actual_limit = min(limit, 20)
+        
+        query = db.query(OriginalImageRecord).filter(OriginalImageRecord.user_id == user_id)
+        
+        # 如果提供了model_id，添加model_id条件
+        if model_id is not None:
+            query = query.filter(OriginalImageRecord.model_id == model_id)
+        
+        if cursor is not None:
+            query = query.filter(OriginalImageRecord.id < cursor)
+        
+        try:
+            return query.order_by(OriginalImageRecord.id.desc()).limit(actual_limit).all()
+        except Exception as e:
+            # 如果仍然出现排序错误，进一步减少limit
+            if "Out of sort memory" in str(e):
+                actual_limit = min(actual_limit, 5)
+                return query.order_by(OriginalImageRecord.id.desc()).limit(actual_limit).all()
+            else:
+                raise e
     
     @staticmethod
     def update_record(

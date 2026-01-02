@@ -16,7 +16,8 @@ from backend.passport.app.core.logging import logger
 from backend.passport.app.api.v1.auth import router as auth_router
 from backend.passport.app.api.v1.user import router as user_router
 from backend.passport.app.api.v1.admin import router as admin_router
-from backend.passport.app.api.v1.image.processor import router as image_processor_router
+from backend.app.api.processor import router as image_processor_router
+from backend.app.api.model_image_generation import router as model_image_generation_router
 from backend.membership.api.membership import router as membership_router
 from backend.points.api.points import router as points_router
 from backend.order.api.order import router as order_router
@@ -26,15 +27,13 @@ from backend.config_center.api.config import router as config_center_router
 from backend.app.api.user_purchase import router as user_purchase_router
 from backend.yilaitumodel.api.model import router as yilaitumodel_router
 from backend.original_image_record.api.original_image_record import router as original_image_record_router
+from backend.feedback.api.feedback import router as feedback_router
 from fastapi.staticfiles import StaticFiles
 import os
 import asyncio
 
 # Import WebSocket Manager for Redis subscription
 from backend.notification.services.websocket_manager import manager
-
-# Import original app modules
-from app.database import init_db
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -63,7 +62,10 @@ app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin", tags=["A
 # 4. Image Processor Router (Original route: /api/process-image)
 app.include_router(image_processor_router, prefix="/api", tags=["Image Processing"])
 
-# 5. New Modules Routers
+# 5. Model Image Generation Router
+app.include_router(model_image_generation_router, prefix=f"{settings.API_V1_STR}/model-image", tags=["Model Image Generation"])
+
+# 6. New Modules Routers
 app.include_router(membership_router, prefix=f"{settings.API_V1_STR}/membership", tags=["Membership"])
 app.include_router(points_router, prefix=f"{settings.API_V1_STR}/points", tags=["Points"])
 app.include_router(order_router, prefix=f"{settings.API_V1_STR}/order", tags=["Order"])
@@ -73,6 +75,7 @@ app.include_router(config_center_router, prefix=f"{settings.API_V1_STR}/config",
 app.include_router(user_purchase_router, prefix=f"{settings.API_V1_STR}/user-purchase", tags=["User Purchase"])
 app.include_router(yilaitumodel_router, prefix=f"{settings.API_V1_STR}/yilaitumodel", tags=["YiLaiTu Model"])
 app.include_router(original_image_record_router, prefix=f"{settings.API_V1_STR}", tags=["Original Image Record"])
+app.include_router(feedback_router, prefix=f"{settings.API_V1_STR}", tags=["Feedback"])
 
 # Static files for YiLaiTu Model images
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "yilaitumodel")
@@ -83,8 +86,14 @@ if os.path.exists(_DATA_DIR):
 @app.on_event("startup")
 async def startup_event():
     # Start Redis subscription in a background task
-    asyncio.create_task(manager.subscribe_to_redis())
+    manager.redis_sub_task = asyncio.create_task(manager.subscribe_to_redis())
     print("Redis subscription for WebSocket notifications has started")
+
+# Shutdown Event Handler: Stop Redis subscription
+@app.on_event("shutdown")
+async def shutdown_event():
+    await manager.stop_redis_subscription()
+    print("Redis subscription for WebSocket notifications has stopped")
 
 # Exception Handlers
 @app.exception_handler(CustomException)
@@ -114,10 +123,5 @@ async def health_check():
     return {"status": "ok", "app_name": settings.PROJECT_NAME}
 
 if __name__ == "__main__":
-    # Initialize original database
-    print("初始化数据库...")
-    init_db()
-    print("数据库初始化完成")
-    
     # Run server
     uvicorn.run(app, host="127.0.0.1", port=8001)

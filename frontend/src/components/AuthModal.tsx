@@ -56,10 +56,10 @@ export const AuthModal: React.FC = () => {
       localStorage.removeItem('refresh_token');
       
       // 调用登录接口
-      const response = await request.post('/auth/login/phone', {
+      const response = (await request.post('/auth/login/phone', {
         phone,
         code
-      });
+      })) as any;
 
       // 保存token到localStorage
       localStorage.setItem('token', response.access_token);

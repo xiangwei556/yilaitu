@@ -39,6 +39,7 @@ const PointsModal: React.FC<PointsModalProps> = ({ isOpen, onClose }) => {
 
   const getTypeLabel = (type: string, sourceType: string) => {
       const map: Record<string, string> = {
+          '1': '模特图生成',
           'order': '购买积分',
           'task': '任务奖励',
           'admin_adjust': '系统调整',
@@ -50,7 +51,8 @@ const PointsModal: React.FC<PointsModalProps> = ({ isOpen, onClose }) => {
           'image_expansion': '扩图',
           'style_transfer': '漫涂嘛',
           'universal_edit': '万能改图',
-          'hd_upscale': '变清晰'
+          'hd_upscale': '变清晰',
+          'feedback_refund': '反馈返还积分'
       };
       return map[sourceType] || sourceType || type;
   }

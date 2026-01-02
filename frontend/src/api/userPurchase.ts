@@ -26,13 +26,13 @@ export interface Page<T> {
 }
 
 export const getMyOrders = (page: number, pageSize: number) => {
-  return request.get<any, Page<Order>>('/user-purchase/orders', {
+  return request.get('/user-purchase/orders', {
     params: { page, page_size: pageSize },
-  });
+  }) as any as Promise<Page<Order>>;
 };
 
 export const getMyPointsTransactions = (page: number, pageSize: number) => {
-  return request.get<any, Page<PointsTransaction>>('/user-purchase/points-transactions', {
+  return request.get('/user-purchase/points-transactions', {
     params: { page, page_size: pageSize },
-  });
+  }) as any as Promise<Page<PointsTransaction>>;
 };
