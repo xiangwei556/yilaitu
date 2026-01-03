@@ -18,6 +18,7 @@ from backend.passport.app.api.v1.user import router as user_router
 from backend.passport.app.api.v1.admin import router as admin_router
 from backend.app.api.processor import router as image_processor_router
 from backend.app.api.model_image_generation import router as model_image_generation_router
+from backend.app.api.pose_split import router as pose_split_router
 from backend.membership.api.membership import router as membership_router
 from backend.points.api.points import router as points_router
 from backend.order.api.order import router as order_router
@@ -65,7 +66,10 @@ app.include_router(image_processor_router, prefix="/api", tags=["Image Processin
 # 5. Model Image Generation Router
 app.include_router(model_image_generation_router, prefix=f"{settings.API_V1_STR}/model-image", tags=["Model Image Generation"])
 
-# 6. New Modules Routers
+# 6. Pose Split Router
+app.include_router(pose_split_router, prefix=f"{settings.API_V1_STR}/pose-split", tags=["Pose Split"])
+
+# 7. New Modules Routers
 app.include_router(membership_router, prefix=f"{settings.API_V1_STR}/membership", tags=["Membership"])
 app.include_router(points_router, prefix=f"{settings.API_V1_STR}/points", tags=["Points"])
 app.include_router(order_router, prefix=f"{settings.API_V1_STR}/order", tags=["Order"])
@@ -81,6 +85,11 @@ app.include_router(feedback_router, prefix=f"{settings.API_V1_STR}", tags=["Feed
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "yilaitumodel")
 if os.path.exists(_DATA_DIR):
     app.mount(f"{settings.API_V1_STR}/yilaitumodel/files", StaticFiles(directory=_DATA_DIR), name="yilaitumodel-files")
+
+# Static files for Pose Split images
+_POSE_SPLIT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "pose-split-images")
+if os.path.exists(_POSE_SPLIT_DIR):
+    app.mount(f"{settings.API_V1_STR}/pose-split/files", StaticFiles(directory=_POSE_SPLIT_DIR), name="pose-split-files")
 
 # Startup Event Handler: Start Redis subscription for WebSocket notifications
 @app.on_event("startup")

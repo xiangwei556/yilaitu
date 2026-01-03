@@ -1,0 +1,137 @@
+[
+  {
+    "id": 1,
+    "description": "自信站立双手叉腰",
+    "url": "http://localhost:8001/api/v1/pose-split/files/026a614f3a36f45d740f18b3054698d1.png"
+  },
+  {
+    "id": 2,
+    "description": "自信向前迈步",
+    "url": "http://localhost:8001/api/v1/pose-split/files/04678603e414bdfe88e381c36adbd594.png"
+  },
+  {
+    "id": 3,
+    "description": "优雅坐姿",
+    "url": "http://localhost:8001/api/v1/pose-split/files/0f48e3020ee2e48f0e3e6e8deb7acfdd.png"
+  },
+  {
+    "id": 4,
+    "description": "休闲靠墙站立",
+    "url": "http://localhost:8001/api/v1/pose-split/files/174edb2d039a293484c1f9ad96b81b72.png"
+  },
+  {
+    "id": 5,
+    "description": "双臂交叉自信站立",
+    "url": "http://localhost:8001/api/v1/pose-split/files/1af27ce95dcded449237b87e970b4291.png"
+  },
+  {
+    "id": 6,
+    "description": "动态行走姿态",
+    "url": "http://localhost:8001/api/v1/pose-split/files/21736d84daccbd181bc44131847561f4.png"
+  },
+  {
+    "id": 7,
+    "description": "盘腿坐地",
+    "url": "http://localhost:8001/api/v1/pose-split/files/22f69b76e5d6f2e93a4165ec0860ee26.png"
+  },
+  {
+    "id": 8,
+    "description": "单手插兜放松站立",
+    "url": "http://localhost:8001/api/v1/pose-split/files/30371790fa8777cb669ed0feed7e9e85.png"
+  },
+  {
+    "id": 9,
+    "description": "回眸转身",
+    "url": "http://localhost:8001/api/v1/pose-split/files/3bbaa7395404aaef212645ce587d87db.png"
+  },
+  {
+    "id": 10,
+    "description": "双臂微抬活力姿态",
+    "url": "http://localhost:8001/api/v1/pose-split/files/6fdc0904eb1e5af5c201bd003a99406f.png"
+  },
+  {
+    "id": 11,
+    "description": "身体前倾互动姿态",
+    "url": "http://localhost:8001/api/v1/pose-split/files/783b87fd169d9033b83bdfa680d4549a.png"
+  },
+  {
+    "id": 12,
+    "description": "单腿前迈自信站姿",
+    "url": "http://localhost:8001/api/v1/pose-split/files/8032b015d6ca5e852f51f9b619b06acc.png"
+  },
+  {
+    "id": 13,
+    "description": "双手交握专业姿态",
+    "url": "http://localhost:8001/api/v1/pose-split/files/8454236ff361033414cd482d0c977a35.png"
+  },
+  {
+    "id": 14,
+    "description": "重心偏移放松站立",
+    "url": "http://localhost:8001/api/v1/pose-split/files/86bb352b78133cd46305d3e4dd984dbc.png"
+  },
+  {
+    "id": 15,
+    "description": "双臂展开欢迎姿态",
+    "url": "http://localhost:8001/api/v1/pose-split/files/89da13f3c0fcfea73d2d8d1d78340146.png"
+  },
+  {
+    "id": 16,
+    "description": "坐凳翘腿",
+    "url": "http://localhost:8001/api/v1/pose-split/files/8abbc80aa477f214244859debdf944c5.png"
+  },
+  {
+    "id": 17,
+    "description": "微蹲动态姿态",
+    "url": "http://localhost:8001/api/v1/pose-split/files/8dd0f1d767287524bd4c74f0b905f430.png"
+  },
+  {
+    "id": 18,
+    "description": "一手叉腰一手手势",
+    "url": "http://localhost:8001/api/v1/pose-split/files/95f5f4e696913e8af5e21159dbf5c5c2.png"
+  },
+  {
+    "id": 19,
+    "description": "双脚分开强壮姿态",
+    "url": "http://localhost:8001/api/v1/pose-split/files/9a13f923ac941e88bf44fe07ca33b25f.png"
+  },
+  {
+    "id": 20,
+    "description": "歪头俏皮姿态",
+    "url": "http://localhost:8001/api/v1/pose-split/files/b56e5c6ead353ff599373fd373a476d9.png"
+  },
+  {
+    "id": 21,
+    "description": "侧身站立",
+    "url": "http://localhost:8001/api/v1/pose-split/files/c445ff9dd01bbfbb24484c2eccc483b5.png"
+  },
+  {
+    "id": 22,
+    "description": "优雅转身",
+    "url": "http://localhost:8001/api/v1/pose-split/files/c668d7b404bf7fe4c5d9758b4b3788eb.png"
+  },
+  {
+    "id": 23,
+    "description": "自然行走",
+    "url": "http://localhost:8001/api/v1/pose-split/files/e3c074fdfbd605cd6c54f07378c82e35.png"
+  },
+  {
+    "id": 24,
+    "description": "双手抱胸",
+    "url": "http://localhost:8001/api/v1/pose-split/files/e862a9a1003a210a102c0c362c45b8fd.png"
+  },
+  {
+    "id": 25,
+    "description": "单手托腮",
+    "url": "http://localhost:8001/api/v1/pose-split/files/ece1fe993e221672228f39d07a6139e3.png"
+  },
+  {
+    "id": 26,
+    "description": "自信挺立",
+    "url": "http://localhost:8001/api/v1/pose-split/files/f2565dc49fd49b75af159341593adbdd.png"
+  },
+  {
+    "id": 27,
+    "description": "姿势27",
+    "url": "http://localhost:8001/api/v1/pose-split/files/f93b830889868ade9598658ec9c447ae.png"
+  }
+]
