@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Modal, Form, Input, Select, InputNumber, message, Space, Tag, DatePicker, Descriptions, Radio } from 'antd';
+import { Table, Card, Button, Modal, Form, Input, Select, InputNumber, message, Space, Tag, DatePicker, Descriptions, Radio, Row, Col, Image } from 'antd';
 import request from '../../../utils/request';
+import ImagePreviewOverlay from '../../components/ImagePreviewOverlay';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -257,11 +258,12 @@ const FeedbackManagement = () => {
             关闭
           </Button>
         ]}
-        width={800}
+        width={1400}
+        style={{ top: 20 }}
       >
         {detailData && (
-          <div>
-            <Descriptions bordered column={2}>
+          <div style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+            <Descriptions bordered column={3} size="small">
               <Descriptions.Item label="反馈ID">{detailData.feedback.id}</Descriptions.Item>
               <Descriptions.Item label="用户ID">{detailData.feedback.user_id}</Descriptions.Item>
               <Descriptions.Item label="反馈类型">
@@ -278,34 +280,95 @@ const FeedbackManagement = () => {
                   {statusMap[detailData.feedback.status]}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="反馈内容" span={2}>
+              <Descriptions.Item label="反馈内容" span={3}>
                 {detailData.feedback.content}
               </Descriptions.Item>
-              <Descriptions.Item label="创建时间" span={2}>
+              <Descriptions.Item label="创建时间" span={3}>
                 {new Date(detailData.feedback.create_time).toLocaleString()}
               </Descriptions.Item>
               {detailData.feedback.reply_content && (
                 <>
-                  <Descriptions.Item label="回复内容" span={2}>
+                  <Descriptions.Item label="回复内容" span={3}>
                     {detailData.feedback.reply_content}
                   </Descriptions.Item>
-                  <Descriptions.Item label="回复时间" span={2}>
+                  <Descriptions.Item label="回复时间" span={3}>
                     {detailData.feedback.reply_time && new Date(detailData.feedback.reply_time).toLocaleString()}
                   </Descriptions.Item>
                 </>
               )}
               {detailData.original_image_record && (
                 <>
-                  <Descriptions.Item label="生图记录ID" span={2}>
+                  <Descriptions.Item label="生图记录ID" span={3}>
                     {detailData.original_image_record.id}
                   </Descriptions.Item>
-                  <Descriptions.Item label="消耗积分" span={2}>
-                    {detailData.original_image_record.cost_integral}
+                  <Descriptions.Item label="消耗积分" span={3}>
+                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#1890ff' }}>
+                      {detailData.original_image_record.cost_integral} 积分
+                    </span>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="原图" span={1}>
+                    {detailData.original_image_record.params?.uploaded_image ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: '10px', background: '#f5f5f5', borderRadius: '8px' }}>
+                        <ImagePreviewOverlay 
+                          src={detailData.original_image_record.params.uploaded_image} 
+                          alt="原图"
+                          overlayWidth={500}
+                          overlayHeight={500}
+                        >
+                          <Image 
+                            src={detailData.original_image_record.params.uploaded_image} 
+                            alt="原图" 
+                            style={{ width: '180px', height: '180px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #e8e8e8', cursor: 'pointer' }}
+                            preview={false}
+                          />
+                        </ImagePreviewOverlay>
+                      </div>
+                    ) : (
+                      <span style={{ color: '#999' }}>暂无原图</span>
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="生成图" span={2}>
+                    {detailData.original_image_record.images && Array.isArray(detailData.original_image_record.images) && detailData.original_image_record.images.length > 0 ? (
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-start', padding: '10px', background: '#f5f5f5', borderRadius: '8px' }}>
+                        {detailData.original_image_record.images.map((img, index) => (
+                          <div key={index} style={{ position: 'relative' }}>
+                            <ImagePreviewOverlay 
+                              src={img.file_path || img.url || img} 
+                              alt={`生成图${index + 1}`}
+                              overlayWidth={500}
+                              overlayHeight={500}
+                            >
+                              <Image 
+                                src={img.file_path || img.url || img} 
+                                alt={`生成图${index + 1}`} 
+                                style={{ width: '180px', height: '180px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #e8e8e8', cursor: 'pointer' }}
+                                preview={false}
+                              />
+                              <div style={{ 
+                                position: 'absolute', 
+                                bottom: '4px', 
+                                right: '4px', 
+                                background: 'rgba(0,0,0,0.6)', 
+                                color: 'white', 
+                                padding: '2px 8px', 
+                                borderRadius: '4px', 
+                                fontSize: '12px',
+                                fontWeight: 'bold'
+                              }}>
+                                #{index + 1}
+                              </div>
+                            </ImagePreviewOverlay>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ color: '#999' }}>暂无生成图</span>
+                    )}
                   </Descriptions.Item>
                 </>
               )}
               {detailData.feedback.points_transactions_id && (
-                <Descriptions.Item label="返还积分ID" span={2}>
+                <Descriptions.Item label="返还积分ID" span={3}>
                   {detailData.feedback.points_transactions_id}
                 </Descriptions.Item>
               )}
@@ -319,68 +382,158 @@ const FeedbackManagement = () => {
         visible={isModalVisible}
         onOk={handleSubmit}
         onCancel={() => setIsModalVisible(false)}
-        width={700}
+        width={1200}
+        style={{ top: 20 }}
+        bodyStyle={{ padding: '16px', overflowX: 'hidden' }}
       >
         {selectedFeedback && (
-          <Form form={form} layout="vertical">
-            <Form.Item label="反馈信息">
-              <div style={{ padding: '10px', background: '#f5f5f5', marginBottom: '16px' }}>
-                <p><strong>类型：</strong>{getFeedbackTypeNames(selectedFeedback.feedback.feedback_type)}</p>
-                <p><strong>内容：</strong>{selectedFeedback.feedback.content}</p>
-              </div>
-            </Form.Item>
+          <div style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', overflowX: 'hidden' }}>
+            <Form form={form} layout="vertical">
+                <Row gutter={16} style={{ overflowX: 'hidden' }}>
+                  <Col span={12}>
+                    <Form.Item label="反馈类型" style={{ marginBottom: '12px' }}>
+                      <div style={{ padding: '8px 12px', background: '#f5f5f5', borderRadius: '6px' }}>
+                        {getFeedbackTypeNames(selectedFeedback.feedback.feedback_type)}
+                      </div>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item label="生图记录消耗积分" style={{ marginBottom: '12px' }}>
+                      <div style={{ padding: '8px 12px', background: '#e6f7ff', borderRadius: '6px', color: '#1890ff', fontWeight: 'bold', fontSize: '14px' }}>
+                        {selectedFeedback.original_image_record?.cost_integral || 0} 积分
+                      </div>
+                    </Form.Item>
+                  </Col>
+                </Row>
 
-            {selectedFeedback.original_image_record && (
-              <Form.Item label="生图记录消耗积分">
-                <div style={{ padding: '10px', background: '#e6f7ff', borderRadius: '4px', color: '#1890ff', fontWeight: 'bold' }}>
-                  {selectedFeedback.original_image_record.cost_integral} 积分
+              <Form.Item label="反馈内容" style={{ marginBottom: '12px' }}>
+                <div style={{ padding: '8px 12px', background: '#f5f5f5', borderRadius: '6px', fontSize: '14px' }}>
+                  {selectedFeedback.feedback.content}
                 </div>
               </Form.Item>
-            )}
 
-            <Form.Item
-              label="处理状态"
-              name="status"
-              rules={[{ required: true, message: '请选择处理状态' }]}
-            >
-              <Select>
-                <Option value={2}>已处理不返还积分</Option>
-                <Option value={1}>已处理已返还积分</Option>
-              </Select>
-            </Form.Item>
+              {selectedFeedback.original_image_record && (
+                <Form.Item label="原图和生成图" style={{ marginBottom: '12px' }}>
+                  <Row gutter={16} style={{ overflowX: 'hidden' }}>
+                    <Col span={6}>
+                      {selectedFeedback.original_image_record.params?.uploaded_image ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px', background: '#f5f5f5', borderRadius: '6px' }}>
+                          <ImagePreviewOverlay 
+                            src={selectedFeedback.original_image_record.params.uploaded_image} 
+                            alt="原图"
+                            overlayWidth={500}
+                            overlayHeight={500}
+                          >
+                            <Image 
+                              src={selectedFeedback.original_image_record.params.uploaded_image} 
+                              alt="原图" 
+                              style={{ width: '140px', height: '140px', objectFit: 'cover', borderRadius: '6px', border: '2px solid #e8e8e8', cursor: 'pointer' }}
+                              preview={false}
+                            />
+                          </ImagePreviewOverlay>
+                        </div>
+                      ) : (
+                        <span style={{ color: '#999' }}>暂无原图</span>
+                      )}
+                    </Col>
+                    <Col span={18}>
+                      {selectedFeedback.original_image_record.images && Array.isArray(selectedFeedback.original_image_record.images) && selectedFeedback.original_image_record.images.length > 0 ? (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-start', padding: '8px', background: '#f5f5f5', borderRadius: '6px', overflowX: 'hidden' }}>
+                          {selectedFeedback.original_image_record.images.map((img, index) => (
+                            <div key={index} style={{ position: 'relative' }}>
+                              <ImagePreviewOverlay 
+                                src={img.file_path || img.url || img} 
+                                alt={`生成图${index + 1}`}
+                                overlayWidth={500}
+                                overlayHeight={500}
+                              >
+                                <Image 
+                                  src={img.file_path || img.url || img} 
+                                  alt={`生成图${index + 1}`} 
+                                  style={{ width: '140px', height: '140px', objectFit: 'cover', borderRadius: '6px', border: '2px solid #e8e8e8', cursor: 'pointer' }}
+                                  preview={false}
+                                />
+                                <div style={{ 
+                                  position: 'absolute', 
+                                  bottom: '4px', 
+                                  right: '4px', 
+                                  background: 'rgba(0,0,0,0.6)', 
+                                  color: 'white', 
+                                  padding: '2px 6px', 
+                                  borderRadius: '4px', 
+                                  fontSize: '11px',
+                                  fontWeight: 'bold'
+                                }}>
+                                  #{index + 1}
+                                </div>
+                              </ImagePreviewOverlay>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ color: '#999' }}>暂无生成图</span>
+                      )}
+                    </Col>
+                  </Row>
+                </Form.Item>
+              )}
 
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) => prevValues.status !== currentValues.status}
-            >
-              {({ getFieldValue }) =>
-                getFieldValue('status') === 1 ? (
+              <Row gutter={16} style={{ overflowX: 'hidden' }}>
+                <Col span={12}>
                   <Form.Item
-                    label="返还积分"
-                    name="refund_points"
-                    rules={[
-                      { required: true, message: '请输入返还积分' },
-                      { type: 'number', min: 0, message: '返还积分不能为负数' }
-                    ]}
-                    tooltip={`最大可返还积分：${(selectedFeedback.original_image_record?.cost_integral || 0) * 2}`}
+                    label="处理状态"
+                    name="status"
+                    rules={[{ required: true, message: '请选择处理状态' }]}
+                    style={{ marginBottom: '12px' }}
                   >
-                    <InputNumber
-                      min={0}
-                      max={(selectedFeedback.original_image_record?.cost_integral || 0) * 2}
-                      style={{ width: '100%' }}
-                    />
+                    <Select>
+                      <Option value={2}>已处理不返还积分</Option>
+                      <Option value={1}>已处理已返还积分</Option>
+                    </Select>
                   </Form.Item>
-                ) : null
-              }
-            </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    noStyle
+                    shouldUpdate={(prevValues, currentValues) => prevValues.status !== currentValues.status}
+                  >
+                    {({ getFieldValue }) =>
+                      getFieldValue('status') === 1 ? (
+                        <Form.Item
+                          label="返还积分"
+                          name="refund_points"
+                          rules={[
+                            { required: true, message: '请输入返还积分' },
+                            { type: 'number', min: 0, message: '返还积分不能为负数' }
+                          ]}
+                          tooltip={`最大可返还积分：${(selectedFeedback.original_image_record?.cost_integral || 0) * 2}`}
+                          style={{ marginBottom: '12px' }}
+                        >
+                          <InputNumber
+                            min={0}
+                            max={(selectedFeedback.original_image_record?.cost_integral || 0) * 2}
+                            style={{ width: '100%' }}
+                          />
+                        </Form.Item>
+                      ) : null
+                    }
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Form.Item
-              label="回复内容"
-              name="reply_content"
-            >
-              <TextArea rows={4} placeholder="请输入处理回复内容" />
-            </Form.Item>
-          </Form>
+              <Form.Item
+                label="回复内容"
+                name="reply_content"
+                style={{ marginBottom: '0' }}
+              >
+                <TextArea 
+                  rows={3} 
+                  placeholder="请输入处理回复内容" 
+                  style={{ resize: 'none' }}
+                />
+              </Form.Item>
+            </Form>
+          </div>
         )}
       </Modal>
     </div>

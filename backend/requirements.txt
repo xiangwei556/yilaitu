@@ -17,3 +17,4 @@ segment-anything==1.0
 django==4.2.8
 volcengine==1.0.64
 pymysql==1.1.0
+cryptography==41.0.7

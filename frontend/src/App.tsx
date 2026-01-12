@@ -2,8 +2,17 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { ModelGeneration } from './pages/ModelGeneration';
-import MyModel from './components/MyModel';
-import { ImageRecordsPage } from './components/ImageRecordsHistory';
+import { ClothingColorChange } from './pages/ClothingColorChange';
+import { ModelOutfitChanges } from './pages/ModelOutfitChanges';
+import { FaceRetouchingNatural } from './pages/FaceRetouchingNatural';
+import { PoseSplit } from './pages/PoseSplit';
+import { BackgroundGeneration } from './pages/background_generation';
+import { UniversalEdit } from './pages/UniversalEdit';
+import { ImageExpansion } from './pages/ImageExpansion';
+import { HdUpscale } from './pages/HdUpscale';
+import { ChangeBackground } from './pages/ChangeBackground';
+import MyModel from './pages/components/MyModel';
+import { ImageRecordsPage } from './pages/components/ImageRecordsHistory';
 
 // @ts-ignore
 import LoginPage from './pages/LoginPage';
@@ -43,9 +52,11 @@ import ModelList from './pages/admin/yilaitumodel/ModelList';
 import ModelForm from './pages/admin/yilaitumodel/ModelForm';
 // @ts-ignore
 import FeedbackManagement from './pages/admin/feedback/FeedbackManagement';
+// @ts-ignore
+import WechatLoginPage from './pages/WechatLoginPage';
 
 
-import { AuthModal } from './components/AuthModal';
+import { AuthModal } from './pages/components/AuthModal';
 
 function App() {
   return (
@@ -55,7 +66,64 @@ function App() {
         {/* Public Routes - Homepage */}
         <Route path="/" element={
           <MainLayout>
+            <div style={{ padding: '24px' }}>
+              <h1>欢迎使用</h1>
+              <p>请从左侧菜单选择功能</p>
+            </div>
+          </MainLayout>
+        } />
+
+        <Route path="/model-gen" element={
+          <MainLayout>
             <ModelGeneration />
+          </MainLayout>
+        } />
+
+        <Route path="/color-change" element={
+          <MainLayout>
+            <ClothingColorChange />
+          </MainLayout>
+        } />
+
+        <Route path="/outfit-change" element={
+          <MainLayout>
+            <ModelOutfitChanges />
+          </MainLayout>
+        } />
+
+        <Route path="/face-retouching" element={
+          <MainLayout>
+            <FaceRetouchingNatural />
+          </MainLayout>
+        } />
+        
+        <Route path="/pose-split" element={
+          <MainLayout>
+            <PoseSplit />
+          </MainLayout>
+        } />
+        
+        <Route path="/magic-edit" element={
+          <MainLayout>
+            <UniversalEdit />
+          </MainLayout>
+        } />
+        
+        <Route path="/expand" element={
+          <MainLayout>
+            <ImageExpansion />
+          </MainLayout>
+        } />
+        
+        <Route path="/clarify" element={
+          <MainLayout>
+            <HdUpscale />
+          </MainLayout>
+        } />
+        
+        <Route path="/white-bg" element={
+          <MainLayout>
+            <BackgroundGeneration />
           </MainLayout>
         } />
         
@@ -71,9 +139,16 @@ function App() {
           </MainLayout>
         } />
         
+        <Route path="/change-bg" element={
+          <MainLayout>
+            <ChangeBackground />
+          </MainLayout>
+        } />
+        
         {/* User Auth Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/wechat-login" element={<WechatLoginPage />} />
         
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />

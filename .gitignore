@@ -37,6 +37,7 @@ backend/logs/
 # Uploads and data
 backend/uploads/
 backend/test_images/
+backend/cert/
 
 # IDE
 .idea/
@@ -99,3 +100,6 @@ simple_console_script.txt
 
 # PowerShell scripts
 start_mcp_server.ps1
+
+# Windows system files
+nul

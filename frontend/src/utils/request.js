@@ -49,7 +49,7 @@ service.interceptors.response.use(
     // We need to distinguish between standard response format and business objects with 'code' field
     // Standard response format should have both 'code' and 'data' fields
     if (res.code !== undefined && res.data !== undefined) {
-      if (res.code !== 0) {
+      if (res.code !== 0 && res.code !== 200) {
         // 不在这里显示错误信息，让调用方自己处理
         return Promise.reject(new Error(res.msg || 'Error'));
       } else {
@@ -65,7 +65,12 @@ service.interceptors.response.use(
     const originalRequest = error.config;
     
     // Handle 401 Unauthorized - token expired
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+    // Exclude login endpoints to allow normal error handling for login failures
+    const isLoginEndpoint = originalRequest.url.includes('/login/');
+    const isPhoneLoginEndpoint = originalRequest.url.endsWith('/auth/login/phone');
+    const shouldExcludeFrom401Handling = isLoginEndpoint || isPhoneLoginEndpoint;
+    
+    if (error.response && error.response.status === 401 && !originalRequest._retry && !shouldExcludeFrom401Handling) {
       if (isRefreshing) {
         // If already refreshing, queue the request
         return new Promise((resolve) => {

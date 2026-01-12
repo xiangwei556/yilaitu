@@ -1,0 +1,13 @@
+# 支付系统依赖包
+
+# HTTP客户端（用于调用支付平台API）
+httpx>=0.24.0
+
+# 加密库（用于签名验证）
+cryptography>=41.0.0
+
+# 微信支付SDK（可选，推荐使用）
+# wechatpay-python>=1.1.0
+
+# 支付宝SDK（可选，推荐使用）
+# python-alipay-sdk>=3.7.0

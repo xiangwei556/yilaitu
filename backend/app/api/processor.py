@@ -29,8 +29,8 @@ excel_utils = ExcelUtils()
 image_splitter = ImageSplitter()
 
 # 初始化阿里云服务
-aliyun_access_key_id = os.environ.get("ALIYUN_ACCESS_KEY_ID", "")
-aliyun_access_key_secret = os.environ.get("ALIYUN_ACCESS_KEY_SECRET", "")
+aliyun_access_key_id = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID", "")
+aliyun_access_key_secret = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "")
 
 try:
     image_segmenter = AliyunImageSegmenter(

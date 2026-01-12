@@ -17,7 +17,7 @@ export async function modelImageGeneration(data: {
   top_outfit_back_image?: string;
   bottom_outfit_image?: string;
   bottom_outfit_back_image?: string;
-}): Promise<any> {
+}) {
   const response = await request.post('/model-image/model-image-generation', data);
-  return response as any;
+  return response;
 }

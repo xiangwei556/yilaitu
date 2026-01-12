@@ -59,6 +59,22 @@ class WebSocketManager:
         }
         await self.send_personal_message(json.dumps(message), user_id)
 
+    async def send_payment_success(self, user_id: int, order_no: str):
+        """
+        发送支付成功通知到指定用户
+        
+        Args:
+            user_id: 用户ID
+            order_no: 订单号
+        """
+        message = {
+            "type": "payment_success",
+            "user_id": user_id,
+            "order_no": order_no,
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        await self.send_personal_message(json.dumps(message), user_id)
+
     async def subscribe_to_redis(self):
         """
         Listen to Redis Pub/Sub channel and broadcast to WebSockets

@@ -11,7 +11,9 @@ from backend.passport.app.core.config import settings
 from backend.passport.app.services.sms_service import sms_service
 from backend.passport.app.services.wechat_service import wechat_service
 from backend.passport.app.services.log_service import log_service
+from backend.passport.app.core.logging import logger
 from backend.passport.app.db.redis import get_redis
+from backend.passport.app.utils.id_generator import generate_user_id
 import uuid
 import random
 from datetime import datetime, timedelta
@@ -51,10 +53,11 @@ class AuthService:
         if not await sms_service.verify_code(user_in.phone, user_in.code):
             raise ValidationError("Invalid or expired verification code")
             
-        # Check if phone already exists
-        stmt = select(UserCredential).where(
+        # Check if phone already exists (excluding deleted users)
+        stmt = select(UserCredential).join(User).where(
             UserCredential.identifier == user_in.phone,
-            UserCredential.credential_type == "phone"
+            UserCredential.credential_type == "phone",
+            User.status != -1
         )
         existing_credential = db.execute(stmt).scalar_one_or_none()
         
@@ -65,8 +68,10 @@ class AuthService:
             # Create User
             username = f"u_{uuid.uuid4().hex[:8]}"
             nickname = f"User_{random.randint(1000, 9999)}"
-            
+            user_id = generate_user_id()  # 生成自定义用户ID
+
             db_user = User(
+                id=user_id,
                 username=username,
                 nickname=user_in.nickname or nickname,
                 avatar=user_in.avatar,
@@ -96,29 +101,44 @@ class AuthService:
 
     @classmethod
     async def login_by_phone(cls, db: Session, phone: str, code: str = None, password: str = None, ip: str = None, ua: str = None) -> dict:
-        # Find user by phone
-        stmt = select(UserCredential).where(
+        # Verify verification code first (outermost layer)
+        if code:
+            if not await sms_service.verify_code(phone, code):
+                raise ValidationError("验证码错误")
+        elif password:
+            # Password login will be handled after user verification
+            pass
+        else:
+            raise ValidationError("Either code or password is required")
+        
+        # Find user by credential (excluding deleted users)
+        stmt = select(UserCredential).join(User).where(
             UserCredential.identifier == phone,
-            UserCredential.credential_type == "phone"
+            UserCredential.credential_type == "phone",
+            User.status != -1
         )
         credential = db.execute(stmt).scalar_one_or_none()
         
         user = None
         if credential:
-            user = db.get(User, credential.user_id)
-        
-        # If user doesn't exist and using universal code, create a new user
-        if not user and code and code == "5567":
-            # Create new user for universal code
+            user = credential.user
+            if user.status != 1:
+                raise AuthenticationError("User is disabled")
+
+        # If user doesn't exist (and no credential), create a new user
+        if not user:
+            # Create new user
             username = f"u_{uuid.uuid4().hex[:8]}"
             nickname = f"User_{random.randint(1000, 9999)}"
-            
+            user_id = generate_user_id()  # 生成自定义用户ID
+
             db_user = User(
+                id=user_id,
                 username=username,
                 nickname=nickname,
                 avatar=None,
                 gender=0,
-                hashed_password=None
+                hashed_password=get_password_hash(password) if password else None
             )
             db.add(db_user)
             db.flush() # Get ID
@@ -135,19 +155,21 @@ class AuthService:
             db.commit()
             db.refresh(db_user)
             user = db_user
-        elif not user or user.status != 1:
-            raise AuthenticationError("User is disabled or does not exist")
-
-        if code:
-            if not await sms_service.verify_code(phone, code):
-                raise AuthenticationError("Invalid verification code")
+            
+            # Log registration
+            log_service.create_log(db, user.id, "register", "success", ip=ip, device_fingerprint=ua, detail="Register by phone login")
+        elif user.status == -1:
+            # User deleted, maybe reactivate? Or block?
+            # For now, block login for deleted users
+            raise AuthenticationError("Account has been deleted")
+        elif user.status != 1:
+            raise AuthenticationError("User is disabled")
         elif password:
+            # Verify password for existing user
             if not user.hashed_password:
                 raise AuthenticationError("Password not set for this user")
             if not verify_password(password, user.hashed_password):
                 raise AuthenticationError("Invalid password")
-        else:
-            raise ValidationError("Either code or password is required")
             
         log_service.create_log(db, user.id, "login", "success", ip=ip, device_fingerprint=ua, detail="Login by phone")
         token_data = await cls._create_token_pair(db, user.id)
@@ -181,29 +203,35 @@ class AuthService:
             raise AuthenticationError("Failed to retrieve OpenID from WeChat")
 
         # 2. Check DB
-        stmt = select(UserCredential).where(
+        stmt = select(UserCredential).join(User).where(
             UserCredential.identifier == openid,
-            UserCredential.credential_type == "wechat_openid"
+            UserCredential.credential_type == "wechat_openid",
+            User.status != -1
         )
         credential = db.execute(stmt).scalar_one_or_none()
         
         if not credential and unionid:
-             stmt = select(UserCredential).where(
+             stmt = select(UserCredential).join(User).where(
                 UserCredential.identifier == unionid,
-                UserCredential.credential_type == "wechat_unionid"
+                UserCredential.credential_type == "wechat_unionid",
+                User.status != -1
             )
              credential = db.execute(stmt).scalar_one_or_none()
              
         user = None
         if credential:
-            user = db.get(User, credential.user_id)
+            user = credential.user
+            if user.status != 1:
+                raise AuthenticationError("User is disabled")
         
         if not user:
             # Auto Register
             wx_info = await wechat_service.get_user_info(wx_token["access_token"], openid)
-            
+
             username = f"wx_{uuid.uuid4().hex[:8]}"
+            user_id = generate_user_id()  # 生成自定义用户ID
             user = User(
+                id=user_id,
                 username=username,
                 nickname=wx_info.get("nickname", "WeChat User"),
                 avatar=wx_info.get("headimgurl"),
@@ -224,9 +252,112 @@ class AuthService:
             db.commit()
             db.refresh(user)
             log_service.create_log(db, user.id, "register", "success", ip=ip, device_fingerprint=ua, detail="Register by WeChat")
+        elif user.status == -1:
+            raise AuthenticationError("Account has been deleted")
+        elif user.status != 1:
+            raise AuthenticationError("User is disabled")
             
         log_service.create_log(db, user.id, "login", "success", ip=ip, device_fingerprint=ua, detail="Login by WeChat")
         return await cls._create_token_pair(db, user.id)
+
+    @classmethod
+    async def login_by_wechat_openid(cls, db: Session, openid: str, ip: str = None, ua: str = None) -> dict:
+        """
+        通过openid登录（用于扫码登录场景）
+        
+        Args:
+            db: 数据库会话
+            openid: 微信openid
+            ip: 客户端IP
+            ua: 用户代理
+        
+        Returns:
+            dict: 包含access_token和refresh_token的字典
+        """
+        # 1. 检查数据库中是否已存在该openid的用户
+        stmt = select(UserCredential).join(User).where(
+            UserCredential.identifier == openid,
+            UserCredential.credential_type == "wechat_openid",
+            User.status != -1
+        )
+        credential = db.execute(stmt).scalar_one_or_none()
+        
+        user = None
+        if credential:
+            user = credential.user
+            if user.status != 1:
+                raise AuthenticationError("User is disabled")
+        
+        if not user:
+            # 2. 如果用户不存在，则创建新用户
+            username = f"wx_{uuid.uuid4().hex[:8]}"
+            user_id = generate_user_id()  # 生成自定义用户ID
+            user = User(
+                id=user_id,
+                username=username,
+                nickname="微信用户",
+                avatar=None,
+                gender=0,
+                status=1
+            )
+            db.add(user)
+            db.flush()
+            
+            # 3. 添加凭证
+            credential = UserCredential(
+                user_id=user.id,
+                identifier=openid,
+                credential_type="wechat_openid",
+                verified=True
+            )
+            db.add(credential)
+            
+            db.commit()
+            db.refresh(user)
+            log_service.create_log(db, user.id, "register", "success", ip=ip, device_fingerprint=ua, detail="Register by WeChat Scan")
+        elif user.status == -1:
+            raise AuthenticationError("Account has been deleted")
+        elif user.status != 1:
+            raise AuthenticationError("User is disabled")
+        else:
+            db.refresh(user)
+            log_service.create_log(db, user.id, "login", "success", ip=ip, device_fingerprint=ua, detail="Login by WeChat Scan")
+        
+        # 4. 生成token
+        token_data = await cls._create_token_pair(db, user.id)
+        
+        # 5. 获取用户积分账户
+        points_account = db.query(PointsAccount).filter(PointsAccount.user_id == user.id).first()
+        total_points = 0
+        if points_account:
+            total_points = float(points_account.balance_permanent) + float(points_account.balance_limited)
+        
+        # 6. 获取用户手机号
+        phone_stmt = select(UserCredential).where(
+            UserCredential.user_id == user.id,
+            UserCredential.credential_type == "phone",
+            UserCredential.verified == True
+        )
+        phone_credential = db.execute(phone_stmt).scalar_one_or_none()
+        user_phone = phone_credential.identifier if phone_credential else None
+        
+        logger.info(f"用户 {user.id} 的手机号查询结果: {user_phone}")
+        
+        # 7. 添加用户信息到响应
+        token_data["user"] = {
+            "id": user.id,
+            "username": user.username,
+            "nickname": user.nickname,
+            "avatar": user.avatar,
+            "phone": user_phone,
+            "role": user.role,
+            "status": user.status,
+            "points": total_points
+        }
+        
+        logger.info(f"返回的token_data: {token_data}")
+        
+        return token_data
 
     @classmethod
     async def logout(cls, db: Session, token: str) -> None:

@@ -14,7 +14,7 @@ from backend.passport.app.services.log_service import log_service
 class UserService:
     @staticmethod
     async def update_profile(db: Session, user_id: int, user_in: UserUpdate, ip: str = None, ua: str = None) -> User:
-        user = db.get(User, user_id)
+        user = db.execute(select(User).where(User.id == user_id, User.status != -1)).scalar_one_or_none()
         if not user:
             raise NotFoundError("User not found")
         

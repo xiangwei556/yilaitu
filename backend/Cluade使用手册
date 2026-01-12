@@ -1,0 +1,215 @@
+一、Claude Code 核心命令（直接输入对话框即可用）
+Claude Code 的命令分为 基础交互命令（控制对话 / 输出）和 编程专属命令（针对代码处理），所有命令均以 / 开头，无需额外配置，输入后回车即可触发。
+命令分类	命令	作用	适用场景
+基础交互	/clear	清空当前会话的上下文（保留对话历史，但 Claude 不再参考之前内容）	长对话后重新提问，避免上下文干扰
+基础交互	/reset	重置整个会话（删除历史 + 清空上下文）	会话出错 / 主题切换，从零开始
+基础交互	/model [模型名]	切换 Claude Code 模型（如 Claude 3 Code、Claude Sonnet Code）	轻量代码用 Sonnet（快），复杂逻辑用 Opus（准）
+基础交互	/temperature [0-1]	调整输出随机性（0 = 严谨 / 0.7 = 创意）	写核心算法设 0，写测试用例设 0.5
+编程专属	/explain	强制 Claude 逐行解释代码逻辑	看不懂第三方代码 / 自己写的复杂逻辑
+编程专属	/debug	定位代码错误 + 给出修复方案	代码报错、运行异常、逻辑漏洞
+编程专属	/refactor	重构代码（优化结构 / 性能 / 可读性）	代码冗余、不符合规范、性能差
+编程专属	/optimize	聚焦性能优化（时间 / 空间复杂度）	算法效率低、接口响应慢
+编程专属	/test	生成单元测试 / 集成测试代码	补全测试用例、验证代码正确性
+编程专属	/format	格式化代码（按语言规范排版）	代码缩进混乱、格式不统一
+编程专属	/convert [目标语言]	代码语言转换	Python → Java、JS → TypeScript 等
+输出控制	/output [格式]	指定输出格式（json/markdown/table）	需结构化输出（如接口返回 JSON）
+二、命令实操示例（可直接复制使用）
+示例 1：基础命令 + 代码调试（最常用）
+输入：
+plaintext
+/debug
+以下Python代码报错：AttributeError: 'list' object has no attribute 'strip'
+代码：
+def clean_data(data):
+    cleaned = []
+    for item in data:
+        cleaned.append(item.strip())
+    return cleaned
+
+clean_data([1, 2, "  test  ", 3])
+Claude Code 输出：
+plaintext
+### 错误定位
+1. 报错原因：列表中包含整数（1/2/3），整数类型无 `strip()` 方法（仅字符串有）；
+2. 影响范围：所有非字符串类型的列表元素都会触发此错误。
+
+### 修复后代码
+def clean_data(data):
+    cleaned = []
+    for item in data:
+        # 先转换为字符串，再去除首尾空格
+        cleaned.append(str(item).strip())
+    return cleaned
+
+# 测试验证
+print(clean_data([1, 2, "  test  ", 3]))  # 输出：['1', '2', 'test', '3']
+示例 2：代码重构 + 输出格式控制
+输入：
+plaintext
+/refactor
+/output markdown
+优化以下JS代码，要求：1. 拆分函数 2. 增加注释 3. 处理边界条件
+代码：
+function calculateTotal(products) {
+    let total = 0;
+    for(let i=0; i<products.length; i++) {
+        total += products[i].price * products[i].count;
+    }
+    return total;
+}
+Claude Code 输出（结构化 Markdown 格式）：
+markdown
+### 重构后代码
+/**
+ * 计算单个商品的金额
+ * @param {Object} product - 商品对象（含price/count字段）
+ * @returns {number} 单个商品金额
+ */
+function calculateProductAmount(product) {
+    // 边界条件：非对象/缺少字段时返回0
+    if (!product || typeof product !== 'object' || !product.price || !product.count) {
+        return 0;
+    }
+    // 边界条件：价格/数量为负数时返回0
+    return product.price > 0 && product.count > 0 
+        ? product.price * product.count 
+        : 0;
+}
+
+/**
+ * 计算所有商品的总金额
+ * @param {Array} products - 商品列表
+ * @returns {number} 商品总金额
+ */
+function calculateTotal(products) {
+    // 边界条件：非数组时返回0
+    if (!Array.isArray(products)) return 0;
+    
+    let total = 0;
+    for (const product of products) {
+        total += calculateProductAmount(product);
+    }
+    return total;
+}
+
+### 重构说明
+1. 拆分函数：将「单个商品计算」与「总金额计算」分离，符合单一职责；
+2. 边界处理：增加非数组、非对象、负数价格/数量的容错；
+3. 可读性：添加注释、改用 for...of 循环、变量命名更清晰。
+示例 3：跨语言转换 + 测试用例生成
+输入：
+plaintext
+/convert Python
+/test
+将以下Java代码转为Python，并生成单元测试
+代码：
+public class Calculator {
+    public static int add(int a, int b) {
+        return a + b;
+    }
+    public static int subtract(int a, int b) {
+        return a - b;
+    }
+}
+Claude Code 输出：
+python
+运行
+# 转换后的Python代码
+class Calculator:
+    @staticmethod
+    def add(a: int, b: int) -> int:
+        return a + b
+    
+    @staticmethod
+    def subtract(a: int, b: int) -> int:
+        return a - b
+
+# 生成的单元测试（使用unittest框架）
+import unittest
+
+class TestCalculator(unittest.TestCase):
+    def test_add(self):
+        self.assertEqual(Calculator.add(2, 3), 5)
+        self.assertEqual(Calculator.add(-1, 1), 0)
+        self.assertEqual(Calculator.add(0, 0), 0)
+    
+    def test_subtract(self):
+        self.assertEqual(Calculator.subtract(5, 3), 2)
+        self.assertEqual(Calculator.subtract(3, 5), -2)
+        self.assertEqual(Calculator.subtract(0, 0), 0)
+
+if __name__ == '__main__':
+    unittest.main()
+三、使用技巧与避坑
+命令组合使用：多个命令可叠加（空格分隔），如 /debug /format /output json，Claude 会按优先级依次执行；
+命令位置：命令可放在提问开头 / 中间，建议开头（更易识别），如 /explain 请解释这段FastAPI代码；
+模型适配：Claude 3 Code 对命令的支持最好，若用基础版 Claude，部分编程命令（如 /optimize）效果会打折扣；
+避免过度依赖：/debug 仅能定位显性错误，复杂业务逻辑漏洞需结合自己的业务理解验证；
+上下文配合：使用 /clear 后，若需参考之前的代码，需重新粘贴（Claude 不再记忆）。
+总结
+Claude Code 核心命令分基础交互（/clear/reset/model）和编程专属（/debug/refactor/test），均以 / 开头；
+命令可组合使用，优先放在提问开头，配合具体代码片段效果最佳；
+不同场景对应不同命令：调试用 /debug、重构用 /refactor、跨语言转换用 /convert。
+如果需要针对特定场景（如前端 React 代码优化、后端接口调试）定制命令组合模板，我可以帮你整理可直接复制的示例
+
+
+
+> 如何在在 Claude Code 中用 Opus 4.5 + Thinking Mode + Plan Mod，命令是什么，如何一步步设置或执行步骤
+
+● 我来帮你了解如何在 Claude Code 中使用 Opus 4.5、Thinking Mode 和 Plan Mode。让我查询相关信息。
+
+● claude-code-guide(Claude Code configuration guide)
+  ⎿  Done (4 tool uses · 6.1k tokens · 1m 11s)
+
+● 根据查询结果，我来总结一下如何在 Claude Code 中使用这些功能：
+
+  📋 快速指南
+
+  1️⃣ 使用 Opus 4.5 模型
+
+  命令行方式：
+  claude --model claude-opus-4-5-20251101
+
+  配置文件方式（.claude/config.json）：
+  {
+    "model": "claude-opus-4-5-20251101"
+  }
+
+  2️⃣ 启用 Thinking Mode
+
+  claude --thinking
+
+  或组合使用：
+  claude --model claude-opus-4-5-20251101 --thinking
+
+  3️⃣ 使用 Plan Mode
+
+  Plan Mode 通常在对话中动态触发，当你请求复杂任务时，我会询问是否进入规划模式。你也可以：
+
+  claude --plan
+
+  🎯 完整组合命令
+
+  # 同时启用所有功能
+  claude --model claude-opus-4-5-20251101 --thinking --plan
+
+  # 或者简化版
+  claude --model opus --thinking --plan
+
+  📝 持久化配置
+
+  编辑 .claude/config.json：
+  {
+    "model": "claude-opus-4-5-20251101",
+    "thinking": true,
+    "plan": true
+  }
+
+  ✅ 验证配置
+
+  claude config show
+
+  注意：目前我正在以 Sonnet 4.5 + Thinking Mode（interleaved）运行。如果你想切换到 Opus 4.5，需要重新启动会话并使用上述命令。
+
+  需要我帮你设置配置文件吗？
+  

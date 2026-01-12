@@ -6,6 +6,16 @@ export default {
     extend: {
       colors: {
         primary: "#3713EC",
+        "background-light": '#ffffff',
+        "background-dark": '#121212',
+        "surface-light": '#FFFFFF',
+        "surface-dark": '#1F2937',
+        "text-primary-light": '#0F172A',
+        "text-primary-dark": '#F8FAFC',
+        "text-secondary-light": '#64748B',
+        "text-secondary-dark": '#94A3B8',
+        "border-light": '#E2E8F0',
+        "border-dark": '#334155',
         brand: {
           DEFAULT: "#6C5CFF",
           dark: "#4C3BFF",
@@ -17,9 +27,9 @@ export default {
           orange: "#FFA62B",
         },
         bg: {
-          page: "#F5F6FA", // Light gray background
+          page: "#F5F6FA",
           sidebar: "#FFFFFF",
-        }
+        },
       },
       fontFamily: {
         sans: [
@@ -28,6 +38,9 @@ export default {
           '"Microsoft YaHei"',
           'sans-serif',
         ],
+      },
+      borderRadius: {
+        DEFAULT: "12px",
       },
     },
   },

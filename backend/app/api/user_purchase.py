@@ -11,7 +11,8 @@ from backend.membership.models.membership import MembershipPackage
 from backend.membership.schemas.membership import MembershipPackage as MembershipPackageSchema
 from backend.points.models.points import PointsPackage, PointsTransaction
 from backend.points.schemas.points import PointsPackage as PointsPackageSchema
-from backend.order.models.order import Order
+from backend.order.models.order import Order, OrderPaid
+from backend.order.services.order_history_service import OrderPaidService
 
 router = APIRouter()
 
@@ -84,19 +85,13 @@ def get_my_orders(
     current_user: User = Depends(get_current_user)
 ):
     """
-    获取我的订单列表，支持分页
+    获取我的已支付订单列表，支持分页
+    读取order表（已支付订单）
     """
-    # 打印当前用户信息和SQL语句
-    print(f"Current User ID: {current_user.id}")
-    
-    query = db.query(Order).filter(Order.user_id == current_user.id)
-    # 打印生成的SQL语句
-    print(f"Orders Query SQL: {query}")
-    
-    total = query.count()
-    print(f"Total orders found: {total}")
-    
-    items = query.order_by(desc(Order.created_at)).offset((page - 1) * page_size).limit(page_size).all()
+    skip = (page - 1) * page_size
+    items = OrderPaidService.list_all(db, skip=skip, limit=page_size, user_id=current_user.id)
+    total = OrderPaidService.count(db, user_id=current_user.id)
+
     return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 @router.get("/points-transactions", response_model=Page[PointsTransactionResponse])

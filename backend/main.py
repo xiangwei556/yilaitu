@@ -16,6 +16,7 @@ from backend.passport.app.core.logging import logger
 from backend.passport.app.api.v1.auth import router as auth_router
 from backend.passport.app.api.v1.user import router as user_router
 from backend.passport.app.api.v1.admin import router as admin_router
+from backend.passport.app.api.v1.wechat_event import router as wechat_event_router
 from backend.app.api.processor import router as image_processor_router
 from backend.app.api.model_image_generation import router as model_image_generation_router
 from backend.app.api.pose_split import router as pose_split_router
@@ -29,12 +30,17 @@ from backend.app.api.user_purchase import router as user_purchase_router
 from backend.yilaitumodel.api.model import router as yilaitumodel_router
 from backend.original_image_record.api.original_image_record import router as original_image_record_router
 from backend.feedback.api.feedback import router as feedback_router
+from backend.payment.api.payment import router as payment_router
 from fastapi.staticfiles import StaticFiles
 import os
 import asyncio
 
 # Import WebSocket Manager for Redis subscription
 from backend.notification.services.websocket_manager import manager
+
+# Import scheduled tasks
+from backend.passport.app.utils.scheduled_tasks import refresh_wechat_access_token_task
+from backend.payment.services.scheduled_tasks import start_payment_scheduled_tasks
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -55,12 +61,15 @@ app.add_middleware(
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
 
 # 2. Passport User Router
-app.include_router(user_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])
+app.include_router(user_router, prefix=f"{settings.API_V1_STR}/user", tags=["Users"])
 
 # 3. Passport Admin Router
 app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
 
-# 4. Image Processor Router (Original route: /api/process-image)
+# 4. WeChat Event Router
+app.include_router(wechat_event_router, prefix=f"{settings.API_V1_STR}", tags=["WeChat"])
+
+# 5. Image Processor Router (Original route: /api/process-image)
 app.include_router(image_processor_router, prefix="/api", tags=["Image Processing"])
 
 # 5. Model Image Generation Router
@@ -80,6 +89,7 @@ app.include_router(user_purchase_router, prefix=f"{settings.API_V1_STR}/user-pur
 app.include_router(yilaitumodel_router, prefix=f"{settings.API_V1_STR}/yilaitumodel", tags=["YiLaiTu Model"])
 app.include_router(original_image_record_router, prefix=f"{settings.API_V1_STR}", tags=["Original Image Record"])
 app.include_router(feedback_router, prefix=f"{settings.API_V1_STR}", tags=["Feedback"])
+app.include_router(payment_router, prefix=f"{settings.API_V1_STR}/payment", tags=["Payment"])
 
 # Static files for YiLaiTu Model images
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "yilaitumodel")
@@ -97,6 +107,14 @@ async def startup_event():
     # Start Redis subscription in a background task
     manager.redis_sub_task = asyncio.create_task(manager.subscribe_to_redis())
     print("Redis subscription for WebSocket notifications has started")
+    
+    # Start WeChat access token refresh task
+    asyncio.create_task(refresh_wechat_access_token_task())
+    print("WeChat access token refresh task has started")
+    
+    # Start payment scheduled tasks
+    await start_payment_scheduled_tasks()
+    print("Payment scheduled tasks have started")
 
 # Shutdown Event Handler: Stop Redis subscription
 @app.on_event("shutdown")

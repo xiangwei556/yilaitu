@@ -30,7 +30,7 @@ export default defineConfig({
   server: {
     port: 80,
     host: '0.0.0.0',
-    allowedHosts: ['yilaitu.com', '0.0.0.0', 'localhost'],
+    allowedHosts: ['yilaitu.com', '0.0.0.0', 'localhost', 'nonsecludedly-sewable-napoleon.ngrok-free.dev', 'zr848436ml96.vicp.fun'],
     proxy: {
       '/api': {
         target: 'http://localhost:8001',

@@ -5,7 +5,7 @@ from backend.passport.app.db.session import Base
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=False)  # 使用generate_user_id()生成
     username = Column(String(50), unique=True, index=True)
     nickname = Column(String(50))
     avatar = Column(String(255))

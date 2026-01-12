@@ -54,6 +54,25 @@
   .hover-scroll:hover .scrollbar-thin-dark::-webkit-scrollbar-thumb:hover {
     background: #9ca3af; /* gray-400 */
   }
+
+  /* 5px thin scrollbar */
+  .scrollbar-thin-1px::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  
+  .scrollbar-thin-1px::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin-1px::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+    border-radius: 5px;
+  }
+
+  .scrollbar-thin-1px::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* slate-400 */
+  }
 }
 
 /* Custom Notification Animations */
@@ -76,6 +95,17 @@
   to {
     opacity: 0;
     transform: translateX(100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -137,5 +167,150 @@
   /* Material Symbols Icon */
   .material-symbols-outlined {
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  /* Auth Container Styles */
+  .auth-container {
+    @apply min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8;
+  }
+
+  .auth-card {
+    @apply max-w-md w-full bg-white rounded-2xl shadow-2xl p-8;
+  }
+
+  .auth-title {
+    @apply text-3xl font-bold text-center text-gray-900 mb-8;
+  }
+
+  .login-type-tabs {
+    @apply flex mb-6 bg-gray-100 rounded-lg p-1;
+  }
+
+  .login-type-tab {
+    @apply flex-1 py-2.5 px-4 text-sm font-medium rounded-md transition-all duration-200 text-gray-600 hover:text-gray-900;
+  }
+
+  .login-type-tab.active {
+    @apply bg-white text-blue-600 shadow-sm;
+  }
+
+  .auth-form {
+    @apply space-y-6;
+  }
+
+  .form-group {
+    @apply space-y-2;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700;
+  }
+
+  .form-input {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none;
+  }
+
+  .form-input.input-error {
+    @apply border-red-500 focus:ring-red-500;
+  }
+
+  .code-input-group {
+    @apply flex gap-2;
+  }
+
+  .code-input-group .form-input {
+    @apply flex-1;
+  }
+
+  .send-code-btn {
+    @apply px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 whitespace-nowrap;
+  }
+
+  .password-input-group {
+    @apply relative;
+  }
+
+  .password-input-group .form-input {
+    @apply pr-12;
+  }
+
+  .toggle-password-btn {
+    @apply absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors;
+  }
+
+  .remember-me-group {
+    @apply flex items-center justify-between;
+  }
+
+  .remember-me-checkbox {
+    @apply w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500;
+  }
+
+  .remember-me-label {
+    @apply ml-2 text-sm text-gray-700;
+  }
+
+  .forgot-password-link {
+    @apply text-sm text-blue-600 hover:text-blue-800 font-medium;
+  }
+
+  .wechat-login-container {
+    @apply flex flex-col items-center space-y-4;
+  }
+
+  .wechat-qr-code-wrapper {
+    @apply relative;
+  }
+
+  .wechat-qr-code {
+    @apply w-64 h-64 rounded-lg border-2 border-gray-200;
+  }
+
+  .wechat-qr-code.loading {
+    @apply opacity-50;
+  }
+
+  .wechat-qr-code-loading {
+    @apply absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg;
+  }
+
+  .loading-spinner {
+    @apply text-gray-600 font-medium;
+  }
+
+  .refresh-qr-code-btn {
+    @apply absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full shadow-lg border-2 border-gray-200 text-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .wechat-login-hint {
+    @apply text-center space-y-1;
+  }
+
+  .wechat-login-hint p {
+    @apply text-sm text-gray-600;
+  }
+
+  .qr-code-expires {
+    @apply text-xs text-gray-500;
+  }
+
+  .auth-btn {
+    @apply w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
+  }
+
+  .auth-link {
+    @apply text-center text-sm text-gray-600;
+  }
+
+  .link-text {
+    @apply text-blue-600 hover:text-blue-800 font-medium;
+  }
+
+  .error-message {
+    @apply text-sm text-red-600 mt-1;
+  }
+
+  .error-message.general-error {
+    @apply p-3 bg-red-50 border border-red-200 rounded-lg mb-4;
   }
 }

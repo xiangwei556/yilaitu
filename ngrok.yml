@@ -1,0 +1,11 @@
+tunnels:
+  frontend:
+    proto: http
+    addr: http://localhost:80
+    bind_tls: true
+    inspect: false
+  backend:
+    proto: http
+    addr: http://localhost:8001
+    bind_tls: true
+    inspect: false
