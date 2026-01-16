@@ -38,6 +38,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   const [validationMessage, setValidationMessage] = useState('');
   const [addModelModalVisible, setAddModelModalVisible] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasMounted = useRef(false);
   
   const [userMyModels, setUserMyModels] = useState<Array<{id: number, avatar?: string, images?: Array<{file_path: string}>}>>([]);
   const [visibleMyModels, setVisibleMyModels] = useState<Array<{id: number, avatar?: string, images?: Array<{file_path: string}>}>>([]);
@@ -200,8 +201,9 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   }, [onResetRef, onLoadFromRecordRef]);
 
   useEffect(() => {
-    if (isLoggedIn && user) {
+    if (isLoggedIn && user && !hasMounted.current) {
       fetchMyModels();
+      hasMounted.current = true;
     }
   }, [isLoggedIn, user]);
 
