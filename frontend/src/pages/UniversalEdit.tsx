@@ -89,8 +89,8 @@ export const UniversalEdit: React.FC = () => {
   };
 
   return (
-    <div className="flex gap-[1px] p-0 h-full items-start" style={{ maxHeight: 'calc(100vh - 56px)' }}>
-      <LeftPanel 
+    <div className="flex gap-0 p-0 h-full items-start" style={{ maxHeight: 'calc(100vh - 56px)' }}>
+      <LeftPanel
         isGenerating={isGenerating}
         setIsGenerating={setIsGenerating}
         showGenerateSuccess={showGenerateSuccess}
@@ -100,15 +100,17 @@ export const UniversalEdit: React.FC = () => {
         onLoadFromRecord={handleRecordClick}
         onLoadFromRecordRef={leftPanelLoadFromRecordRef}
       />
-      <RightPanel 
-        isGenerating={isGenerating} 
-        generatedImages={generatedImages}
-        taskId={taskId}
-        currentRecord={currentRecord}
-        findRecordRef={findRecordRef}
-        onFeedback={handleFeedback}
-        onContinueCreating={handleContinueCreating}
-      />
+      {showGenerateSuccess && generatedImages.length > 0 && (
+        <RightPanel
+          isGenerating={isGenerating}
+          generatedImages={generatedImages}
+          taskId={taskId}
+          currentRecord={currentRecord}
+          findRecordRef={findRecordRef}
+          onFeedback={handleFeedback}
+          onContinueCreating={handleContinueCreating}
+        />
+      )}
     </div>
   );
 };

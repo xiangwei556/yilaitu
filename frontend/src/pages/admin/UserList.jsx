@@ -1,132 +1,121 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Tag, Space, Button, message, Input, Modal } from 'antd';
+import React from 'react';
+import { ProTable } from '@ant-design/pro-components';
+import { Tag, Button } from 'antd';
 import request from '../../utils/request';
 
-const { Search } = Input;
-
 const UserList = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0
-  });
-  const [keyword, setKeyword] = useState('');
-
-  const fetchUsers = async (page = 1, size = 10, search = '') => {
-    setLoading(true);
-    try {
-      const res = await request.get('/admin/users', {
-        params: {
-          page,
-          size,
-          keyword: search
-        }
-      });
-      setData(res.items);
-      setPagination({
-        ...pagination,
-        current: page,
-        total: res.total
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const handleTableChange = (pagination) => {
-    fetchUsers(pagination.current, pagination.pageSize, keyword);
-  };
-
-  const handleSearch = (value) => {
-    setKeyword(value);
-    fetchUsers(1, pagination.pageSize, value);
-  };
+  const actionRef = React.useRef();
 
   const handleStatusChange = async (userId, status) => {
-      try {
-          await request.patch(`/admin/users/${userId}/status?status=${status}`);
-          message.success('状态已更新');
-          fetchUsers(pagination.current, pagination.pageSize, keyword);
-      } catch (error) {
-          // error handled
-      }
+    try {
+      await request.patch(`/admin/users/${userId}/status?status=${status}`);
+      actionRef.current?.reload();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const columns = [
     {
       title: 'ID',
       dataIndex: 'id',
-      key: 'id',
+      width: 80,
+      search: false,
     },
     {
       title: '用户名',
       dataIndex: 'username',
-      key: 'username',
     },
     {
       title: '昵称',
       dataIndex: 'nickname',
-      key: 'nickname',
     },
     {
       title: '角色',
       dataIndex: 'role',
-      key: 'role',
-      render: role => <Tag color={role === 'admin' ? 'red' : 'blue'}>{role === 'admin' ? '管理员' : '普通用户'}</Tag>
+      valueType: 'select',
+      valueEnum: {
+        admin: { text: '管理员', status: 'Error' },
+        user: { text: '普通用户', status: 'Default' },
+      },
+      render: (_, record) => (
+        <Tag color={record.role === 'admin' ? 'red' : 'blue'}>
+          {record.role === 'admin' ? '管理员' : '普通用户'}
+        </Tag>
+      ),
     },
     {
       title: '状态',
       dataIndex: 'status',
-      key: 'status',
-      render: status => (
-        <Tag color={status === 1 ? 'green' : 'volcano'}>
-          {status === 1 ? '启用' : '禁用'}
+      width: 100,
+      valueType: 'select',
+      valueEnum: {
+        1: { text: '启用', status: 'Success' },
+        0: { text: '禁用', status: 'Default' },
+      },
+      render: (_, record) => (
+        <Tag color={record.status === 1 ? 'green' : 'volcano'}>
+          {record.status === 1 ? '启用' : '禁用'}
         </Tag>
       ),
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
-      key: 'created_at',
-      render: text => new Date(text).toLocaleString()
+      width: 180,
+      valueType: 'dateTime',
+      search: false,
     },
     {
       title: '操作',
       key: 'action',
+      width: 120,
+      fixed: 'right',
+      search: false,
       render: (_, record) => (
-        <Space size="middle">
-          {record.status === 1 ? (
-              <Button type="link" danger onClick={() => handleStatusChange(record.id, 0)}>禁用</Button>
-          ) : (
-              <Button type="link" onClick={() => handleStatusChange(record.id, 1)}>启用</Button>
-          )}
-        </Space>
+        record.status === 1 ? (
+          <Button type="link" size="small" danger onClick={() => handleStatusChange(record.id, 0)}>
+            禁用
+          </Button>
+        ) : (
+          <Button type="link" size="small" onClick={() => handleStatusChange(record.id, 1)}>
+            启用
+          </Button>
+        )
       ),
     },
   ];
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <Search placeholder="搜索用户" onSearch={handleSearch} style={{ width: 200 }} />
-      </div>
-      <Table 
-        columns={columns} 
-        dataSource={data} 
-        rowKey="id"
-        pagination={pagination}
-        loading={loading}
-        onChange={handleTableChange}
-      />
-    </div>
+    <ProTable
+      columns={columns}
+      actionRef={actionRef}
+      request={async (params, sort, filter) => {
+        const res = await request.get('/admin/users', {
+          params: {
+            page: params.current,
+            size: params.pageSize,
+            keyword: params.username,
+          },
+        });
+        return {
+          data: res.items || [],
+          success: true,
+          total: res.total || 0,
+        };
+      }}
+      rowKey="id"
+      search={{
+        labelWidth: 'auto',
+      }}
+      pagination={{
+        defaultPageSize: 10,
+        showSizeChanger: true,
+        showQuickJumper: true,
+      }}
+      dateFormatter="string"
+      headerTitle="用户管理"
+    />
   );
 };
 

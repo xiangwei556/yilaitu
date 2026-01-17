@@ -6,8 +6,8 @@ export default {
     extend: {
       colors: {
         primary: "#3713EC",
-        "background-light": '#ffffff',
-        "background-dark": '#121212',
+        "background-light": '#F8FAFC',
+        "background-dark": '#111827',
         "surface-light": '#FFFFFF',
         "surface-dark": '#1F2937',
         "text-primary-light": '#0F172A',
@@ -38,9 +38,6 @@ export default {
           '"Microsoft YaHei"',
           'sans-serif',
         ],
-      },
-      borderRadius: {
-        DEFAULT: "12px",
       },
     },
   },

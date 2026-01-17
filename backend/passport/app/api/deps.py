@@ -39,8 +39,7 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
         
-    from sqlalchemy import select
-    user = db.execute(select(User).where(User.id == int(user_id), User.status != -1)).scalar_one_or_none()
+    user = db.get(User, int(user_id))
     if user is None:
         raise credentials_exception
         

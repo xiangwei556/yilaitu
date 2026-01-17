@@ -23,6 +23,7 @@ from backend.app.api.pose_split import router as pose_split_router
 from backend.membership.api.membership import router as membership_router
 from backend.points.api.points import router as points_router
 from backend.order.api.order import router as order_router
+from backend.payment.api.payment import router as payment_router
 from backend.notification.api.notification import router as notification_router
 from backend.notification.api.message import router as message_router
 from backend.config_center.api.config import router as config_center_router
@@ -30,7 +31,7 @@ from backend.app.api.user_purchase import router as user_purchase_router
 from backend.yilaitumodel.api.model import router as yilaitumodel_router
 from backend.original_image_record.api.original_image_record import router as original_image_record_router
 from backend.feedback.api.feedback import router as feedback_router
-from backend.payment.api.payment import router as payment_router
+from backend.sys_images.api import router as sys_images_router
 from fastapi.staticfiles import StaticFiles
 import os
 import asyncio
@@ -40,7 +41,8 @@ from backend.notification.services.websocket_manager import manager
 
 # Import scheduled tasks
 from backend.passport.app.utils.scheduled_tasks import refresh_wechat_access_token_task
-from backend.payment.services.scheduled_tasks import start_payment_scheduled_tasks
+# Import subscription scheduler
+from backend.subscription.tasks.scheduler import start_scheduler, shutdown_scheduler
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -82,6 +84,7 @@ app.include_router(pose_split_router, prefix=f"{settings.API_V1_STR}/pose-split"
 app.include_router(membership_router, prefix=f"{settings.API_V1_STR}/membership", tags=["Membership"])
 app.include_router(points_router, prefix=f"{settings.API_V1_STR}/points", tags=["Points"])
 app.include_router(order_router, prefix=f"{settings.API_V1_STR}/order", tags=["Order"])
+app.include_router(payment_router, prefix=f"{settings.API_V1_STR}/payment", tags=["Payment"])
 app.include_router(notification_router, prefix=f"{settings.API_V1_STR}/notification", tags=["Notification"])
 app.include_router(message_router, prefix=f"{settings.API_V1_STR}/message", tags=["Message"])
 app.include_router(config_center_router, prefix=f"{settings.API_V1_STR}/config", tags=["Config"])
@@ -89,7 +92,7 @@ app.include_router(user_purchase_router, prefix=f"{settings.API_V1_STR}/user-pur
 app.include_router(yilaitumodel_router, prefix=f"{settings.API_V1_STR}/yilaitumodel", tags=["YiLaiTu Model"])
 app.include_router(original_image_record_router, prefix=f"{settings.API_V1_STR}", tags=["Original Image Record"])
 app.include_router(feedback_router, prefix=f"{settings.API_V1_STR}", tags=["Feedback"])
-app.include_router(payment_router, prefix=f"{settings.API_V1_STR}/payment", tags=["Payment"])
+app.include_router(sys_images_router, prefix=f"{settings.API_V1_STR}/sys-images", tags=["Sys Images"])
 
 # Static files for YiLaiTu Model images
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "yilaitumodel")
@@ -101,26 +104,35 @@ _POSE_SPLIT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data
 if os.path.exists(_POSE_SPLIT_DIR):
     app.mount(f"{settings.API_V1_STR}/pose-split/files", StaticFiles(directory=_POSE_SPLIT_DIR), name="pose-split-files")
 
+# Static files for Sys Images
+_SYS_IMAGES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "sys-images")
+if os.path.exists(_SYS_IMAGES_DIR):
+    app.mount(f"{settings.API_V1_STR}/sys-images/files", StaticFiles(directory=_SYS_IMAGES_DIR), name="sys-images-files")
+
 # Startup Event Handler: Start Redis subscription for WebSocket notifications
 @app.on_event("startup")
 async def startup_event():
     # Start Redis subscription in a background task
     manager.redis_sub_task = asyncio.create_task(manager.subscribe_to_redis())
     print("Redis subscription for WebSocket notifications has started")
-    
+
     # Start WeChat access token refresh task
     asyncio.create_task(refresh_wechat_access_token_task())
     print("WeChat access token refresh task has started")
-    
-    # Start payment scheduled tasks
-    await start_payment_scheduled_tasks()
-    print("Payment scheduled tasks have started")
+
+    # Start subscription scheduler
+    start_scheduler()
+    print("Subscription scheduler has started")
 
 # Shutdown Event Handler: Stop Redis subscription
 @app.on_event("shutdown")
 async def shutdown_event():
     await manager.stop_redis_subscription()
     print("Redis subscription for WebSocket notifications has stopped")
+
+    # Stop subscription scheduler
+    shutdown_scheduler()
+    print("Subscription scheduler has stopped")
 
 # Exception Handlers
 @app.exception_handler(CustomException)

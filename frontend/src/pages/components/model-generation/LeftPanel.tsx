@@ -3,6 +3,7 @@ import { ImagePlus, ChevronDown, Coins, Upload, X, Star } from 'lucide-react';
 import clsx from 'clsx';
 import { getMyModels, getSystemModels } from '../../../api/yilaitumodel';
 import { modelImageGeneration } from '../../../api/modelImageGeneration';
+import { getPublicScenes } from '../../../api/sysImages';
 import AddModelModal from '../AddModelModal';
 import { useAuthStore } from '../../../stores/useAuthStore';
 
@@ -17,24 +18,19 @@ const generateModels = (type: 'adult' | 'system', count: number) => {
 const adultModels = generateModels('adult', 25);
 
 
-const styleSets = {
-  daily: Array.from({ length: 20 }, (_, i) => ({
-    id: i + 1,
-    title: `日常·样例${i + 1}`,
-    image: `https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=daily%20lifestyle%20fashion%20${i + 1}&image_size=square`
-  })),
-  magazine: Array.from({ length: 20 }, (_, i) => ({
-    id: i + 1,
-    title: `杂志·样例${i + 1}`,
-    image: `https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=magazine%20editorial%20fashion%20${i + 1}&image_size=square`
-  })),
-  sport: Array.from({ length: 20 }, (_, i) => ({
-    id: i + 1,
-    title: `运动·样例${i + 1}`,
-    image: `https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=sport%20active%20fashion%20${i + 1}&image_size=square`
-  })),
+// styleSets 初始为空数组，由API动态填充
+const styleSets: Record<string, any[]> = {
+  daily: [],
+  magazine: [],
+  sport: [],
 };
 
+// 风格key到后端style值的映射
+const styleKeyToValue: Record<string, number> = {
+  daily: 1,
+  magazine: 2,
+  sport: 3
+};
 
 
 interface LeftPanelProps {
@@ -67,6 +63,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
   const [hasCalledMyModelsAPI, setHasCalledMyModelsAPI] = useState(false);
   const hasCalledSystemModelsAPIRef = useRef(false);
   const hasCalledMyModelsAPIRef = useRef(false);
+  const hasMounted = useRef(false);
   
   useEffect(() => {
     hasCalledSystemModelsAPIRef.current = hasCalledSystemModelsAPI;
@@ -124,6 +121,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
   const [styleHoveredId, setStyleHoveredId] = useState<number | null>(null);
   const stylePopoverRef = useRef<HTMLDivElement>(null);
   const styleModalGridRef = useRef<HTMLDivElement>(null);
+  const styleModalScrollRef = useRef<HTMLDivElement>(null);
   const [styleModalPreviewPos, setStyleModalPreviewPos] = useState({ top: 0, arrowTop: 0 });
   const [styleMainHoveredId, setStyleMainHoveredId] = useState<number | null>(null);
   const [styleMainPreviewPos, setStyleMainPreviewPos] = useState({ top: 0, arrowTop: 0 });
@@ -134,6 +132,16 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
   const [currentDailyStyles, setCurrentDailyStyles] = useState(styleSets.daily.slice(0, 5));
   const [currentMagazineStyles, setCurrentMagazineStyles] = useState(styleSets.magazine.slice(0, 5));
   const [currentSportStyles, setCurrentSportStyles] = useState(styleSets.sport.slice(0, 5));
+
+  // 场景图"更多"弹出层的完整数据
+  const [allDailyStyles, setAllDailyStyles] = useState<any[]>([]);
+  const [allMagazineStyles, setAllMagazineStyles] = useState<any[]>([]);
+  const [allSportStyles, setAllSportStyles] = useState<any[]>([]);
+
+  // 瀑布流分页状态
+  const [sceneModalPage, setSceneModalPage] = useState(1);
+  const [sceneModalHasMore, setSceneModalHasMore] = useState(true);
+  const [sceneModalLoading, setSceneModalLoading] = useState(false);
 
   const [showValidationOverlay, setShowValidationOverlay] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
@@ -181,11 +189,12 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
 
   // Fetch my models when user logs in and is on "我的模特" tab
   useEffect(() => {
-    if (isLoggedIn && wasLoggedIn.current === false && modelType === 'my' && (!hasCalledMyModelsAPI || allMyModels.length === 0)) {
+    if (isLoggedIn && wasLoggedIn.current === false && modelType === 'my' && !hasCalledMyModelsAPI && !hasMounted.current) {
       fetchMyModels(1, 12);
+      hasMounted.current = true;
     }
     wasLoggedIn.current = isLoggedIn;
-  }, [isLoggedIn, modelType, hasCalledMyModelsAPI, allMyModels.length]);
+  }, [isLoggedIn, modelType]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -406,15 +415,11 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
       return;
     }
     
-    // Only call API if:
-    // 1. We haven't called it before, OR
-    // 2. We called it before but got 0 models
-    if (!hasCalledMyModelsAPI || allMyModels.length === 0) {
-      fetchMyModels(1, 12); // Use consistent limit of 12 to avoid duplicate IDs
-    } else {
-      // 确保显示正确数量的我的模特图片
+    // 确保显示正确数量的我的模特图片
+    if (allMyModels.length > 0) {
       setVisibleMyModels(allMyModels.slice(0, 4));
     }
+    // API调用由useEffect处理，避免重复调用
   };
 
   // Handle successful model addition
@@ -470,8 +475,18 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
       : styleCategory === 'magazine'
       ? setCurrentMagazineStyles
       : setCurrentSportStyles;
-  const modalStyles = styleSets[styleCategory];
-  
+
+  // modalStyles: 直接使用动态加载的数据
+  const modalStyles =
+    styleCategory === 'daily' ? allDailyStyles
+    : styleCategory === 'magazine' ? allMagazineStyles
+    : allSportStyles;
+
+  const setModalStyles =
+    styleCategory === 'daily' ? setAllDailyStyles
+    : styleCategory === 'magazine' ? setAllMagazineStyles
+    : setAllSportStyles;
+
   // Modal Preview Logic
   const previewModelId = hoveredModelId || selectedModel;
   const previewModel = modalModels.find(m => m.id === previewModelId);
@@ -496,6 +511,97 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
         return '姿势';
     }
   };
+
+  // 获取场景图片（用于主区域显示，只获取前5张）
+  const fetchScenesByStyle = async (styleKey: string) => {
+    try {
+      const styleValue = styleKeyToValue[styleKey];
+      const res = await getPublicScenes({ page: 1, page_size: 5, style: styleValue });
+
+      if (res?.items) {
+        const formattedItems = res.items.map((item: any) => ({
+          id: item.id,
+          title: item.name,
+          image: item.image_url
+        }));
+
+        // 更新主区域显示的5张图片
+        if (styleKey === 'daily') {
+          setCurrentDailyStyles(formattedItems);
+        } else if (styleKey === 'magazine') {
+          setCurrentMagazineStyles(formattedItems);
+        } else if (styleKey === 'sport') {
+          setCurrentSportStyles(formattedItems);
+        }
+      }
+    } catch (error) {
+      console.error('获取场景图片失败:', error);
+    }
+  };
+
+  // 获取更多场景图片（用于弹出层，支持瀑布流）
+  const fetchModalScenes = async (styleKey: string, page: number, append: boolean = false) => {
+    if (sceneModalLoading) return;
+    if (append && !sceneModalHasMore) return;
+
+    setSceneModalLoading(true);
+    try {
+      const styleValue = styleKeyToValue[styleKey];
+      const pageSize = 12;
+      const res = await getPublicScenes({ page, page_size: pageSize, style: styleValue });
+
+      if (res?.items) {
+        const formattedItems = res.items.map((item: any) => ({
+          id: item.id,
+          title: item.name,
+          image: item.image_url
+        }));
+
+        const setter =
+          styleKey === 'daily' ? setAllDailyStyles
+          : styleKey === 'magazine' ? setAllMagazineStyles
+          : setAllSportStyles;
+
+        if (append) {
+          setter((prev: any[]) => [...prev, ...formattedItems]);
+        } else {
+          setter(formattedItems);
+        }
+
+        setSceneModalHasMore(res.items.length >= pageSize);
+        setSceneModalPage(page);
+      }
+    } catch (error) {
+      console.error('加载更多场景失败:', error);
+    } finally {
+      setSceneModalLoading(false);
+    }
+  };
+
+  // 滚动事件处理（瀑布流）
+  const handleSceneModalScroll = useCallback(() => {
+    const container = styleModalScrollRef.current;
+    if (!container || sceneModalLoading || !sceneModalHasMore) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    if (scrollHeight - scrollTop - clientHeight < 100) {
+      fetchModalScenes(styleCategory, sceneModalPage + 1, true);
+    }
+  }, [styleCategory, sceneModalPage, sceneModalHasMore, sceneModalLoading]);
+
+  // 页面初始化时加载默认风格（日常生活风）的主区域图片
+  useEffect(() => {
+    fetchScenesByStyle('daily');
+  }, []);
+
+  // 滚动监听 - 瀑布流加载
+  useEffect(() => {
+    const container = styleModalScrollRef.current;
+    if (container && showStyleModal) {
+      container.addEventListener('scroll', handleSceneModalScroll);
+      return () => container.removeEventListener('scroll', handleSceneModalScroll);
+    }
+  }, [showStyleModal, handleSceneModalScroll]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -1377,7 +1483,21 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
               ].map((item) => (
                 <button
                   key={item.key}
-                  onClick={() => { setStyleCategory(item.key); setSelectedStyle(1); }}
+                  onClick={() => {
+                    setStyleCategory(item.key);
+                    setSelectedStyle(1);
+                    // 只在对应数组为空时才调用API（第一次点击）
+                    const currentData =
+                      item.key === 'daily' ? currentDailyStyles
+                      : item.key === 'magazine' ? currentMagazineStyles
+                      : currentSportStyles;
+                    if (currentData.length === 0) {
+                      fetchScenesByStyle(item.key);
+                    }
+                    // 重置瀑布流状态
+                    setSceneModalPage(1);
+                    setSceneModalHasMore(true);
+                  }}
                   className={clsx(
                     "flex-shrink-0 px-4 py-2.5 rounded-full font-medium border",
                     styleCategory === item.key
@@ -1444,7 +1564,14 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
                 </div>
               ))}
               <div 
-                onClick={() => { setShowStyleModal(true); setStyleHoveredId(selectedStyle); }}
+                onClick={() => {
+                  setShowStyleModal(true);
+                  setStyleHoveredId(selectedStyle);
+                  // 打开弹出层时加载第一页数据
+                  setSceneModalPage(1);
+                  setSceneModalHasMore(true);
+                  fetchModalScenes(styleCategory, 1, false);
+                }}
                 className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
               >
                 <span className="text-gray-500 text-xs">更多</span>
@@ -1534,7 +1661,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
               <span>生成中...</span>
               <div className="flex items-center bg-white/20 rounded-full px-2 py-0.5 text-xs">
                 <span>30</span>
-                <Coins className="w-3 h-3 ml-1 fill-yellow-400 text-yellow-400" />
+                <img src="/yidou.svg" alt="icon" className="w-3 h-3 ml-1" />
               </div>
             </button>
           ) : showGenerateSuccess ? (
@@ -1552,10 +1679,10 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
             </div>
           ) : (
             <button onClick={handleGenerate} className="w-full bg-gradient-to-r from-[#6C5CFF] to-[#5a4cf0] text-white py-3 rounded-full text-base font-bold shadow-lg shadow-brand/30 hover:shadow-brand/40 transition-all flex items-center justify-center gap-2">
-              <span>开始生成</span>
+              <span>立即生成</span>
               <div className="flex items-center bg-white/20 rounded-full px-2 py-0.5 text-xs">
                 <span>30</span>
-                <Coins className="w-3 h-3 ml-1 fill-yellow-400 text-yellow-400" />
+                <img src="/yidou.svg" alt="icon" className="w-3 h-3 ml-1" />
               </div>
             </button>
           )}
@@ -1718,7 +1845,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div ref={styleModalGridRef} className="flex-1 overflow-y-auto p-4 scrollbar-thin-dark style-modal-content">
+            <div ref={styleModalScrollRef} className="flex-1 overflow-y-auto p-4 scrollbar-thin-dark style-modal-content">
               <div className="grid grid-cols-3 gap-2">
                 {modalStyles.map((style) => (
                   <div
@@ -1747,13 +1874,18 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
                       setSelectedStyle(style.id);
                       const target = modalStyles.find(s => s.id === style.id);
                       if (!target) return;
-                      if (style.id > 5) {
+
+                      // 使用数组索引判断，而不是id
+                      const targetIndex = modalStyles.findIndex(s => s.id === style.id);
+
+                      if (targetIndex >= 5) {
+                        // 如果选择的是第6张以后的，将其放到首位
                         const newList = [...currentStyles];
                         newList[0] = target;
                         setCurrentStyles(newList);
                       } else {
-                        // Restore default first image if selecting one of the first 5
-                        const defaultFirst = modalStyles.find(s => s.id === 1);
+                        // 如果选择的是前5张，恢复默认排序
+                        const defaultFirst = modalStyles[0];
                         if (defaultFirst) {
                           const newList = [...currentStyles];
                           newList[0] = defaultFirst;
@@ -1771,6 +1903,13 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ isGenerating, setIsGenerat
                   </div>
                 ))}
               </div>
+              {/* 加载状态 */}
+              {sceneModalLoading && (
+                <div className="text-center py-4 text-gray-500 text-sm">加载中...</div>
+              )}
+              {!sceneModalHasMore && modalStyles.length > 0 && (
+                <div className="text-center py-4 text-gray-400 text-sm">没有更多了</div>
+              )}
             </div>
           </div>
           {styleHoveredId && (

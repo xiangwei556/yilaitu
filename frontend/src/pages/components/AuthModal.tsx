@@ -28,14 +28,6 @@ const AuthModalContent: React.FC = () => {
   const [pollingActive, setPollingActive] = useState(false);
   const [qrCodeExpired, setQrCodeExpired] = useState(false);
   
-  // 存储微信登录获取到的用户数据
-  const [wechatUserData, setWechatUserData] = useState<{
-    nickname: string;
-    id: string;
-    points: number;
-    avatar: string;
-  } | null>(null);
-  
   // 手机号绑定相关状态
   const [showPhoneBindModal, setShowPhoneBindModal] = useState(false);
   const [bindPhone, setBindPhone] = useState('');
@@ -154,14 +146,6 @@ const AuthModalContent: React.FC = () => {
   // 关闭手机号绑定弹窗
   const handleClosePhoneBindModal = () => {
     incrementBindCancelCount();
-    
-    // 如果用户通过微信扫码登录且未绑定手机号，直接使用微信用户信息登录
-    if (wechatUserData) {
-      login(wechatUserData);
-      message.success('登录成功');
-      setWechatUserData(null);
-    }
-    
     setShowPhoneBindModal(false);
     closeAuthModal();
   };
@@ -231,48 +215,6 @@ const AuthModalContent: React.FC = () => {
         
         console.log('扫码检测响应:', response);
 
-        // 处理已绑定的情况（解绑后重新绑定）
-        if (response && response.data && response.data.bound) {
-          console.log('检测到微信已绑定');
-          setIsScanned(true);
-          setPollingActive(false);
-
-          if (response.data.access_token) {
-            localStorage.setItem('token', response.data.access_token);
-            console.log('Access Token已保存到localStorage');
-          }
-          if (response.data.refresh_token) {
-            localStorage.setItem('refresh_token', response.data.refresh_token);
-            console.log('Refresh Token已保存到localStorage');
-          }
-          
-          if (response.data.user) {
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            localStorage.setItem('isLoggedIn', 'true');
-            console.log('用户信息已保存到localStorage:', response.data.user);
-            
-            const userData = {
-              nickname: response.data.user.nickname || '微信用户',
-              id: response.data.user.id.toString(),
-              points: response.data.user.points || 0,
-              avatar: response.data.user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
-            };
-            
-            // 直接登录成功，关闭弹层
-            login(userData, true);
-            console.log('微信已绑定，直接登录成功');
-            
-            message.success('微信绑定成功');
-            closeAuthModal();
-            
-            // 刷新账户设置页面的数据（如果打开的话）
-            // 触发一个自定义事件来通知账户设置页面刷新
-            window.dispatchEvent(new CustomEvent('wechatBound'));
-            
-            return; // 重要：避免继续执行下面的扫码逻辑
-          }
-        }
-
         if (response && response.scanned) {
           console.log('检测到用户已扫码');
           setIsScanned(true);
@@ -294,13 +236,6 @@ const AuthModalContent: React.FC = () => {
             localStorage.setItem('isLoggedIn', 'true');
             console.log('用户信息已保存到localStorage:', response.user);
             
-            const userData = {
-              nickname: response.user.nickname || '微信用户',
-              id: response.user.id.toString(),
-              points: response.user.points || 0,
-              avatar: response.user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
-            };
-            
             const cancelCount = getBindCancelCount();
             const hasPhone = !!response.user.phone;
             
@@ -309,17 +244,17 @@ const AuthModalContent: React.FC = () => {
             
             if (!hasPhone && cancelCount < 2) {
               console.log('用户未绑定手机号且取消次数少于2次，显示绑定手机号弹窗');
-              
-              login(userData, false);
-              console.log('已调用 login 方法更新应用状态（不关闭模态框）');
-              
-              setWechatUserData(userData);
               setShowPhoneBindModal(true);
             } else {
               console.log('用户已绑定手机号或取消次数超过2次，直接登录');
               
-              login(userData, true);
-              console.log('已调用 login 方法更新应用状态（关闭模态框）');
+              login({
+                nickname: response.user.nickname || '微信用户',
+                id: response.user.id.toString(),
+                points: response.user.points || 0,
+                avatar: response.user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
+              });
+              console.log('已调用 login 方法更新应用状态');
               
               message.success('登录成功');
               closeAuthModal();
@@ -396,9 +331,7 @@ const AuthModalContent: React.FC = () => {
   };
 
   // 登录事件处理函数
-  const handleLogin = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    
+  const handleLogin = async () => {
     // 重置错误信息
     setErrors({
       phone: '',
@@ -460,12 +393,12 @@ const AuthModalContent: React.FC = () => {
       // 关闭登录弹窗
       closeAuthModal();
     } catch (error) {
-      const errorMsg = error.response?.data?.msg || error.response?.data?.detail || '登录失败，请稍后重试';
-      if (errorMsg === '验证码错误') {
-        setErrors(prev => ({ ...prev, code: errorMsg }));
-        setLoginCodeSent(false);
+      // 更新错误信息
+      const errorDetail = error.response?.data?.detail || '登录失败，请稍后重试';
+      if (errorDetail === '验证码错误') {
+        setErrors(prev => ({ ...prev, code: errorDetail }));
       } else {
-        setErrors(prev => ({ ...prev, general: errorMsg }));
+        setErrors(prev => ({ ...prev, general: errorDetail }));
       }
     }
   };
@@ -481,7 +414,7 @@ const AuthModalContent: React.FC = () => {
                         onClick={handleClosePhoneBindModal}
                         className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors focus:outline-none"
                     >
-                        <X className="w-5 h-5" />
+                        <span className="material-icons-outlined text-xl">close</span>
                     </button>
                 </div>
                 <div className="p-8">
@@ -497,7 +430,7 @@ const AuthModalContent: React.FC = () => {
                         <div className="relative group">
                             <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors">phone_iphone</span>
                             <input 
-                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-3 pl-10 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all" 
+                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-3 pl-10 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" 
                                 placeholder="请输入手机号" 
                                 type="tel"
                                 value={bindPhone}
@@ -513,7 +446,7 @@ const AuthModalContent: React.FC = () => {
                             <div className="relative flex-1 group">
                                 <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors">verified_user</span>
                                 <input 
-                                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-3 pl-10 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all" 
+                                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-3 pl-10 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" 
                                     placeholder="验证码" 
                                     type="text"
                                     value={bindCode}
@@ -526,7 +459,7 @@ const AuthModalContent: React.FC = () => {
                             <button 
                                 onClick={fetchBindCode}
                                 disabled={bindCountdown > 0}
-                                className="px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+                                className={`px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-colors whitespace-nowrap ${bindCountdown > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 {bindCountdown > 0 ? `${bindCountdown}s` : '获取验证码'}
                             </button>
@@ -547,9 +480,16 @@ const AuthModalContent: React.FC = () => {
         </div>
       ) : (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl bg-background-light dark:bg-background-dark shadow-2xl rounded-xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
+      <div className="bg-white rounded-xl w-full max-w-4xl shadow-2xl relative animate-in zoom-in-95 duration-200 grid grid-cols-1 md:grid-cols-2 overflow-hidden">
+        <button 
+          onClick={closeAuthModal}
+          className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors z-50"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
         {/* Left Side - Branding Image */}
-        <div className="bg-primary text-white p-12 flex flex-col justify-between relative overflow-hidden">
+        <div className="bg-[#3713ec] text-white p-12 flex flex-col justify-between relative overflow-hidden">
           <div>
             <div className="flex items-center space-x-2 mb-12">
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -570,20 +510,20 @@ const AuthModalContent: React.FC = () => {
         </div>
 
         {/* Right Side - Auth Forms */}
-        <div className="p-12 flex flex-col justify-center">
+        <div className="p-12 flex flex-col justify-center text-center relative">
           
           {authMode === 'phone' ? (
             // Phone Login Mode
-            <>
+            <div className="p-12 flex flex-col justify-center animate-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">手机号登录/注册</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-8">未注册的手机号验证后将自动创建账户</p>
               
-              <form className="space-y-6" onSubmit={handleLogin}>
+              <div className="space-y-6">
                 <div>
                   <label className="sr-only" htmlFor="phone">手机号</label>
                   <input 
-                    className={`w-full px-4 py-3 rounded-md bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 ${errors.phone ? 'border-red-500' : ''}`}
-                    id="phone"  
+                    className={`w-full px-4 py-3 rounded-md bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all ${errors.phone ? 'border-red-400' : ''}`}
+                    id="phone" 
                     placeholder="请输入手机号" 
                     type="tel"
                     value={phone}
@@ -599,7 +539,7 @@ const AuthModalContent: React.FC = () => {
                   <div className="flex items-center">
                     <label className="sr-only" htmlFor="code">验证码</label>
                     <input 
-                      className={`w-full px-4 py-3 rounded-md bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 ${errors.code ? 'border-red-500' : ''}`}
+                      className={`w-full px-4 py-3 rounded-md bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all ${errors.code ? 'border-red-400' : ''}`}
                       id="code" 
                       placeholder="请输入验证码" 
                       type="text"
@@ -612,23 +552,20 @@ const AuthModalContent: React.FC = () => {
                     <button 
                       onClick={fetchLoginCode}
                       disabled={loginCountdown > 0}
-                      className={`whitespace-nowrap ml-4 px-4 py-3 rounded-md border border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 cursor-not-allowed focus:outline-none transition-colors duration-200 w-28 text-center ${loginCountdown > 0 ? 'cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'}`}
+                      className={`whitespace-nowrap ml-4 px-4 py-3 rounded-md border border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 focus:outline-none transition-colors duration-200 w-28 text-center ${loginCountdown > 0 ? 'cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'}`}
                       type="button"
                     >
                       {loginCountdown > 0 ? `${loginCountdown}s` : '获取验证码'}
                     </button>
                   </div>
-                  
-                  {errors.code ? (
-                    <p className="mt-2 text-sm text-red-500 pl-1">{errors.code}</p>
-                  ) : loginCodeSent ? (
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">短信验证码已发送，请耐心等待</p>
-                  ) : null}
+                  {loginCodeSent && <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">短信验证码已发送，请耐心等待</p>}
+                  {errors.code && <p className="text-red-500 text-xs mt-1 pl-1">{errors.code}</p>}
                 </div>
                 
                 {errors.general && <p className="text-red-500 text-xs">{errors.general}</p>}
                 
                 <button 
+                  onClick={handleLogin}
                   className="w-full bg-primary text-white py-3 rounded-full font-semibold hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-gray-800 transition-colors duration-200" 
                   type="submit"
                 >
@@ -638,12 +575,12 @@ const AuthModalContent: React.FC = () => {
                 <div className="flex items-center justify-center mt-4">
                   <p className="text-xs text-gray-500 dark:text-gray-400 select-none text-center">
                     登录即代表我已阅读并同意
-                    <a className="text-primary hover:underline" href="#" onClick={(e) => e.preventDefault()}>使用协议</a>
+                    <a className="text-primary hover:underline ml-1" href="#" onClick={(e) => e.preventDefault()}>使用协议</a>
                     及
-                    <a className="text-primary hover:underline" href="#" onClick={(e) => e.preventDefault()}>隐私政策</a>
+                    <a className="text-primary hover:underline ml-1" href="#" onClick={(e) => e.preventDefault()}>隐私政策</a>
                   </p>
                 </div>
-              </form>
+              </div>
 
               <div className="mt-8">
                 <div className="relative">
@@ -661,22 +598,22 @@ const AuthModalContent: React.FC = () => {
                     className="w-full flex items-center justify-center space-x-2 bg-green-500 text-white py-3 rounded-full font-semibold hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-colors duration-200"
                   >
                     <svg aria-hidden="true" className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8.697 15.65c-4.437 0-8.033-3.218-8.033-7.185 0-3.967 3.596-7.185 8.033-7.185 4.437 0 8.033 3.218 8.033 7.185 0 3.967-3.596 7.185-8.033 7.185-.568 0-1.123-.053-1.65-.151-1.118.614-2.522 1.118-4.015 1.157l.379-1.571c-1.742-1.288-2.747-3.118-2.747-5.071 0-3.737 3.48-6.768 7.777-6.768 4.296 0 7.777 3.031 7.777 6.768 0 3.737-3.48 6.768-7.777 6.768-.443 0-.876-.032-1.298-.093l-3.12 1.713v-2.152c-1.586-1.048-2.544-2.705-2.544-4.477zm1.59-8.522c-.44 0-.795.355-.795.795s.355.795.795.795.795-.355.795-.795-.355-.795-.795-.795-.355-.795-.795-.795-.355-.795-.795-.795zm4.237 0c-.44 0-.795.355-.795.795s.355.795.795.795.795-.355.795-.795-.355-.795-.795-.795-.355-.795-.795-.795-.355-.795-.795-.795-.355-.795-.795-.795-.355-.795-.795-.795-.355-.795-.795-.795zm8.003 6.368c0-3.118-3.048-5.645-6.808-5.645-3.76 0-6.808 2.527-6.808 5.645 0 3.118 3.048 5.645 6.808 5.645.478 0 .945-.041 1.396-.118l2.631 1.319v-1.658c1.533-.972 2.455-2.474 2.455-4.095zm-4.706-2.029c.373 0 .674-.301.674-.674s-.301-.674-.674-.674-.674.301-.674.674.301.674.674.674zm2.964 0c.373 0 .674-.301.674-.674s-.301-.674-.674-.674-.674.301-.674.674.301.674.674.674z" fillRule="nonzero"></path>
+                      <path d="M8.697 15.65c-4.437 0-8.033-3.218-8.033-7.185 0-3.967 3.596-7.185 8.033-7.185 4.437 0 8.033 3.218 8.033 7.185 0 3.967-3.596 7.185-8.033 7.185-.568 0-1.123-.053-1.65-.151-1.118.614-2.522 1.118-4.015 1.157l.379-1.571c-1.742-1.288-2.747-3.118-2.747-5.071 0-3.737 3.48-6.768 7.777-6.768 4.296 0 7.777 3.031 7.777 6.768 0 3.737-3.48 6.768-7.777 6.768-.443 0-.876-.032-1.298-.093l-3.12 1.713v-2.152c-1.586-1.048-2.544-2.705-2.544-4.477zm1.59-8.522c-.44 0-.795.355-.795.795s.355.795.795.795.795-.355.795-.795-.355-.795-.795-.795-.355-.795-.795-.795-.355-.795-.795-.795zm4.237 0c-.44 0-.795.355-.795.795s.355.795.795.795.795-.355.795-.795-.355-.795-.795-.795-.355-.795-.795-.795-.355-.795-.795-.795-.355-.795-.795-.795-.355-.795-.795-.795zm8.003 6.368c0-3.118-3.048-5.645-6.808-5.645-3.76 0-6.808 2.527-6.808 5.645 0 3.118 3.048 5.645 6.808 5.645.478 0 .945-.041 1.396-.118l2.631 1.319v-1.658c1.533-.972 2.455-2.474 2.455-4.095zm-4.706-2.029c.373 0 .674-.301.674-.674s-.301-.674-.674-.674-.674.301-.674.674.301.674.674.674zm2.964 0c.373 0 .674-.301.674-.674s-.301-.674-.674-.674-.674.301-.674.674.301.674.674.674z" fillRule="nonzero"></path>
                     </svg>
                     <span>微信扫码登录</span>
                   </button>
                 </div>
               </div>
-            </>
+            </div>
           ) : (
             // WeChat Login Mode
             <div className="w-full max-w-[320px] mx-auto text-center animate-in slide-in-from-right-4 duration-300">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">微信扫码登录/注册</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-xs mb-8">微信扫码关注公众号完成登录/注册</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">微信扫码登录/注册</h3>
+              <p className="text-gray-600 text-xs mb-8">微信扫码关注公众号完成登录/注册</p>
               
               {qrCodeLoading ? (
                 <div className="flex justify-center mb-8">
-                  <div className="w-64 h-64 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                  <div className="w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
                     <div className="text-gray-400 text-sm">加载中...</div>
                   </div>
                 </div>
@@ -686,16 +623,16 @@ const AuthModalContent: React.FC = () => {
                     <img 
                       src={qrCodeUrl} 
                       alt="微信扫码登录" 
-                      className="w-full h-full border border-gray-200 dark:border-gray-700 rounded-lg"
+                      className="w-full h-full border border-gray-200 rounded-lg"
                     />
                     {qrCodeExpired && (
                       <div 
-                        className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/90 dark:bg-black/90 backdrop-blur-[2px]"
+                        className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/90 backdrop-blur-[2px]"
                       >
-                        <p className="text-base font-bold text-gray-900 dark:text-white mb-4">二维码失效</p>
+                        <p className="text-base font-bold text-gray-900 mb-4">二维码失效</p>
                         <button 
                           onClick={handleRefreshQRCode}
-                          className="bg-primary text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-opacity-90 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                          className="bg-[#3713ec] text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-opacity-90 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3713ec]"
                         >
                           刷新二维码
                         </button>
@@ -705,7 +642,7 @@ const AuthModalContent: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex justify-center mb-8">
-                  <div className="w-64 h-64 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                  <div className="w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
                     <div className="text-gray-400 text-sm">加载二维码失败，请重试</div>
                   </div>
                 </div>
@@ -717,16 +654,16 @@ const AuthModalContent: React.FC = () => {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                  <div className="w-full border-t border-gray-300"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-[#121212] text-gray-500 dark:text-gray-400">其他登录方式</span>
+                  <span className="px-2 bg-white text-gray-500">其他登录方式</span>
                 </div>
               </div>
 
               <button 
                 onClick={() => switchAuthMode('phone')}
-                className="w-full flex items-center justify-center space-x-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-full font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors mt-6"
+                className="w-full flex items-center justify-center space-x-2 border border-gray-200 text-gray-700 py-3 rounded-full font-semibold hover:bg-gray-50 transition-colors mt-6"
               >
                 <svg aria-hidden="true" className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M17.75 3.5a.75.75 0 00-1.5 0v1.258a7.502 7.502 0 00-8.5 0V3.5a.75.75 0 00-1.5 0v1.439a7.5 7.5 0 00-1.25 13.911V19.5a.75.75 0 001.5 0v-1.121a7.5 7.5 0 0011 0V19.5a.75.75 0 001.5 0v-.67a7.5 7.5 0 00-1.25-13.912V3.5zM7.75 16.5a1.25 1.25 0 11-2.5 0 1.25 1.25 0 012.5 0zm9.75-1.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"></path>
@@ -735,14 +672,6 @@ const AuthModalContent: React.FC = () => {
               </button>
             </div>
           )}
-
-          <button 
-            onClick={closeAuthModal}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-          >
-            <span className="sr-only">Close</span>
-            <X className="w-6 h-6" />
-          </button>
         </div>
       </div>
     </div>

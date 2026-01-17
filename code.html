@@ -2,8 +2,8 @@
 <html lang="zh-CN"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>积分会员 - 购买积分包</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<title>万能改图起始页 - 细节优化</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
@@ -14,227 +14,326 @@
                 extend: {
                     colors: {
                         primary: "#3713EC",
-                        "primary-dark": "#2a0eb5",
-                        "background-light": "#F3F4F8",
-                        "background-dark": "#0a0a0a",
-                        "wechat": "#07C160",
-                        "alipay": "#1677FF",
+                        "primary-hover": "#2c0fb8",
+                        "background-light": "#F7F8FC",
+                        "background-dark": "#121212",
                     },
                     fontFamily: {
                         display: ["Noto Sans SC", "sans-serif"],
                     },
                     borderRadius: {
                         DEFAULT: "1rem",
-                        '2xl': '1.25rem',
-                        '3xl': '1.5rem',
                     },
                     boxShadow: {
-                        'glow': '0 0 20px rgba(55, 19, 236, 0.15)',
-                        'card': '0 4px 20px rgba(0, 0, 0, 0.05)',
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'inner-light': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
                     }
                 },
             },
         };
     </script>
-<style>
+<style type="text/tailwindcss">
         body {
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            font-family: 'Noto Sans SC', sans-serif;
         }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .hide-scrollbar::-webkit-scrollbar {
+        .scrollbar-hide::-webkit-scrollbar {
             display: none;
         }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.3);
+            border-radius: 3px;
+        }
+        @keyframes vertical-scroll {
+            0% { transform: translateY(0); }
+            45% { transform: translateY(0); }
+            50% { transform: translateY(-50%); }
+            95% { transform: translateY(-50%); }
+            100% { transform: translateY(-100%); }
+        }
+        .animate-vertical-scroll {
+            animation: vertical-scroll 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
     </style>
 </head>
-<body class="font-display bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 h-screen flex flex-col overflow-hidden">
-<header class="flex items-center justify-between px-8 py-4 bg-white dark:bg-gray-900 shadow-sm z-20 relative">
-<div class="flex items-center space-x-3">
-<div class="bg-primary/10 p-2 rounded-xl">
-<svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
+<body class="font-display bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 h-screen overflow-hidden">
+<div class="flex flex-col h-full">
+<header class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-30 relative flex-shrink-0">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-2xl">magic_button</span>
+<h1 class="text-xl font-bold text-gray-900 dark:text-white">衣来图</h1>
 </div>
-<h1 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">衣来图</h1>
-</div>
-<div class="flex items-center space-x-6 text-sm font-medium text-gray-600 dark:text-gray-400">
+<div class="flex items-center space-x-4 text-sm font-medium text-gray-600 dark:text-gray-300">
+<div class="hidden md:flex items-center space-x-6 mr-2">
 <a class="hover:text-primary transition-colors" href="#">联系客服</a>
 <a class="hover:text-primary transition-colors" href="#">帮助中心</a>
-<div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
-<div class="flex items-center space-x-3">
-<div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500">
-                U
-             </div>
-<span class="text-gray-900 dark:text-gray-200">我的账户</span>
+<a class="hover:text-primary transition-colors" href="#">小程序</a>
+</div>
+<div class="hidden md:block h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
+<div class="relative group ml-2">
+<button class="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative outline-none">
+<span class="material-symbols-outlined text-gray-600 dark:text-gray-300">notifications</span>
+<span class="absolute top-1.5 right-1.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-900"></span>
+</button>
+</div>
+<div class="flex items-center bg-primary/5 dark:bg-primary/20 rounded-full pl-5 pr-1 py-1 border border-primary/10 dark:border-primary/30 ml-3">
+<div class="flex items-center mr-3 gap-1.5">
+<span class="material-symbols-outlined text-[20px] text-yellow-500 drop-shadow-sm">monetization_on</span>
+<div class="flex flex-col items-start leading-none justify-center">
+<span class="text-[10px] text-primary/70 dark:text-primary/60 font-medium mb-0.5">我的积分</span>
+<span class="text-sm font-bold text-primary dark:text-primary-300">1,250</span>
+</div>
+</div>
+<a class="px-4 py-2 text-xs font-bold text-white bg-primary rounded-full shadow-md shadow-primary/20 hover:bg-primary/90 hover:shadow-primary/30 transition-all flex items-center" href="#">
+<span class="material-symbols-outlined text-sm mr-1">diamond</span>
+                    开通会员
+                </a>
+</div>
+<div class="ml-3">
+<button class="flex items-center justify-center w-9 h-9 rounded-full ring-2 ring-gray-100 dark:ring-gray-700 hover:ring-primary/30 transition-all overflow-hidden focus:outline-none group">
+<img alt="User Avatar" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8yBPT0ZRKatvwk4PbtsuE2E1pa_aKPg7O7xr9K4g6cbvyyl5SKkslyELO6z7OjkmJo6uptCrevDiBdCvqqs8FtI0GwqV4U4PtJ1YnHt5WuBmzh1PQfwVjU4h1BFNhutdVLXvkj__QCVBEZr0afyj4cQjlkMimslZK2Po5Q7MmHjrReFOwuQ-ANUTP6VP74DyYrPD26NwzrBwcI0kmQcHz6pcDspZGdpVYaIIxxHDzkB6nWYXjzGV0PK6P_-qJQJfTmOJvcwE7hI_1"/>
+</button>
 </div>
 </div>
 </header>
 <div class="flex flex-1 overflow-hidden">
-<aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col justify-between flex-shrink-0 z-10">
-<div class="p-4 space-y-2">
-<div class="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider">菜单</div>
-<a class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary rounded-xl transition-all group" href="#">
-<span class="material-icons-outlined mr-3 group-hover:text-primary">home</span> 首页
-            </a>
-<a class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary rounded-xl transition-all group" href="#">
-<span class="material-icons-outlined mr-3 group-hover:text-primary">auto_awesome</span> 模特图生成
-            </a>
-<a class="flex items-center px-4 py-3 bg-primary/5 text-primary rounded-xl font-semibold shadow-sm ring-1 ring-primary/10" href="#">
-<span class="material-icons-outlined mr-3">workspace_premium</span> 积分会员
-            </a>
-<a class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary rounded-xl transition-all group" href="#">
-<span class="material-icons-outlined mr-3 group-hover:text-primary">history</span> 生成记录
-            </a>
-</div>
-<div class="p-4 border-t border-gray-100 dark:border-gray-800">
-<div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-4 text-white relative overflow-hidden group cursor-pointer">
-<div class="absolute top-0 right-0 p-3 opacity-10 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
-<span class="material-icons-outlined text-4xl">contact_support</span>
-</div>
-<h4 class="text-sm font-bold mb-1">遇到问题?</h4>
-<p class="text-xs text-gray-400">联系我们的技术支持团队</p>
-</div>
-</div>
+<aside class="w-60 bg-white dark:bg-gray-900 p-4 flex flex-col justify-between flex-shrink-0 border-r border-gray-100 dark:border-gray-800 z-20">
+<nav class="flex flex-col space-y-2 overflow-y-auto custom-scrollbar">
+<a class="flex items-center px-4 py-3 bg-primary/10 text-primary rounded-lg font-semibold" href="#">
+<span class="material-symbols-outlined mr-3">magic_button</span>
+                    万能改图
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3 text-[22px]">auto_awesome</span>
+                    模特图生成
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3 text-[22px]">texture</span>
+                    白底图生成
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3 text-[22px]">swap_horiz</span>
+                    模特换装
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3 text-[22px]">face_retouching_natural</span>
+                    模特换脸
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3 text-[22px]">accessibility_new</span>
+                    姿势裂变
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3 text-[22px]">color_lens</span>
+                    服装换色
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3 text-[22px]">photo_size_select_large</span>
+                    扩图
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3 text-[22px]">hd</span>
+                    变清晰
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3">badge</span>
+                    模特管理
+                </a>
+<a class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="#">
+<span class="material-icons-outlined mr-3 text-[22px]">history</span>
+                    生图记录
+                </a>
+</nav>
 </aside>
-<main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark relative">
-<div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
-<div class="container mx-auto max-w-[96rem] px-6 py-8">
-<div class="mb-10 rounded-3xl bg-gradient-to-r from-[#3713EC] via-[#5B37EB] to-[#7B5AFF] p-8 md:p-12 text-white shadow-xl shadow-primary/20 relative overflow-hidden">
-<div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-<div class="absolute bottom-0 left-0 w-48 h-48 bg-purple-500 opacity-20 rounded-full blur-2xl transform -translate-x-1/2 translate-y-1/2"></div>
-<div class="relative z-10 max-w-3xl">
-<div class="inline-flex items-center px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/20 text-xs font-bold mb-4">
-<span class="material-icons-outlined text-sm mr-1">star</span> 
-                        会员权益全新升级
-                    </div>
-<h2 class="text-3xl md:text-4xl font-black tracking-tight mb-4">解锁专业版会员，释放无限创意</h2>
-<p class="text-blue-100 text-lg max-w-xl">获取更多算力积分，享受极速生成通道，支持企业级API接口调用。</p>
+<main class="flex-1 flex flex-col items-center bg-background-light dark:bg-background-dark py-4 px-6 md:px-12 overflow-y-auto custom-scrollbar">
+<div class="w-full max-w-[1280px] flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+<div class="w-full flex flex-col items-center">
+<div class="flex flex-col items-center mb-8">
+<div class="flex items-center space-x-2 mb-4">
+<span class="material-symbols-outlined text-primary text-4xl">magic_button</span>
+<h2 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">万能改图</h2>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-center max-w-lg text-base">
+                            上传图片通过语言指令或涂抹，轻松修改服装产品图
+                        </p>
+</div>
+<div class="w-full mb-8">
+<div class="bg-white dark:bg-gray-900 p-5 rounded-[2rem] shadow-soft border border-gray-100 dark:border-gray-800 flex flex-col gap-5 transition-all duration-300">
+<div class="w-full relative bg-gray-50 dark:bg-gray-800 rounded-2xl border border-transparent focus-within:border-primary/30 focus-within:bg-white dark:focus-within:bg-gray-900 transition-all duration-300">
+<div class="flex items-start min-h-[64px] py-4 px-6">
+<span class="text-primary font-bold text-sm mt-[3px] mr-3 shrink-0 select-none">局部重绘</span>
+<textarea class="w-full bg-transparent border-none focus:ring-0 resize-none h-full p-0 text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 leading-relaxed custom-scrollbar" placeholder="描述你想要修改的内容，例如：将背景换成北欧简约客厅，给模特换一件白色长袖衬衫..." rows="2"></textarea>
 </div>
 </div>
-<div class="flex flex-col xl:flex-row gap-8 items-start">
-<div class="flex-1 w-full space-y-8">
-<div class="w-full">
-<div class="flex w-full bg-white dark:bg-gray-800 p-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
-<button class="flex-1 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 rounded-full transition-all">
-                                开通月度会员
-                            </button>
-<button class="flex-1 py-2.5 text-sm font-bold rounded-full bg-primary text-white shadow-md transition-all">
-                                购买积分包
-                            </button>
-</div>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-<div class="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm hover:shadow-card transition-all cursor-pointer flex flex-col items-center justify-center text-center h-48">
-<h3 class="text-lg font-bold text-gray-700 dark:text-gray-200 mb-2">100 积分</h3>
-<div class="mb-1">
-<span class="text-3xl font-black text-gray-900 dark:text-white">¥9.9</span>
-</div>
-<div class="text-xs text-gray-400 line-through mb-4">¥19.9</div>
-<div class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-1 rounded-full">
-                                    ¥0.099/积分
-                                </div>
-</div>
-<div class="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm hover:shadow-card transition-all cursor-pointer flex flex-col items-center justify-center text-center h-48">
-<h3 class="text-lg font-bold text-gray-700 dark:text-gray-200 mb-2">200 积分</h3>
-<div class="mb-1">
-<span class="text-3xl font-black text-gray-900 dark:text-white">¥19.9</span>
-</div>
-<div class="text-xs text-gray-400 line-through mb-4">¥39.9</div>
-<div class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-1 rounded-full">
-                                    ¥0.099/积分
-                                </div>
-</div>
-<div class="relative bg-primary/5 dark:bg-primary/10 rounded-2xl p-6 ring-2 ring-primary shadow-xl shadow-primary/10 cursor-pointer flex flex-col items-center justify-center text-center h-48">
-<div class="absolute -top-3 right-6 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                                    推荐
-                                </div>
-<h3 class="text-lg font-bold text-primary mb-2">500 积分</h3>
-<div class="mb-1">
-<span class="text-3xl font-black text-gray-900 dark:text-white">¥39.9</span>
-</div>
-<div class="text-xs text-gray-400 line-through mb-4">¥99.9</div>
-<div class="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full">
-                                    ¥0.079/积分
-                                </div>
-</div>
-<div class="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm hover:shadow-card transition-all cursor-pointer flex flex-col items-center justify-center text-center h-48">
-<h3 class="text-lg font-bold text-gray-700 dark:text-gray-200 mb-2">1500 积分</h3>
-<div class="mb-1">
-<span class="text-3xl font-black text-gray-900 dark:text-white">¥99.9</span>
-</div>
-<div class="text-xs text-gray-400 line-through mb-4">¥299.9</div>
-<div class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-1 rounded-full">
-                                    ¥0.066/积分
-                                </div>
-</div>
-</div>
-<div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 flex items-start gap-3 text-sm text-blue-800 dark:text-blue-200 border border-blue-100 dark:border-blue-900/50">
-<span class="material-icons-outlined text-lg mt-0.5">info</span>
-<p>积分有效期为永久有效，不清零。购买后立即到账。如需发票，请在购买后联系在线客服。</p>
-</div>
-</div>
-<div class="xl:w-96 w-full flex-shrink-0">
-<div class="sticky top-6 bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-<div class="p-6 bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
-<h3 class="text-base font-bold text-gray-900 dark:text-white mb-4">订单详情</h3>
-<div class="flex justify-between items-center mb-2">
-<span class="text-sm text-gray-600 dark:text-gray-400">商品名称</span>
-<span class="text-sm font-medium text-gray-900 dark:text-white">500 积分包</span>
-</div>
-<div class="flex justify-between items-center mb-4">
-<span class="text-sm text-gray-600 dark:text-gray-400">应付金额</span>
-<span class="text-xl font-black text-primary">¥39.9</span>
-</div>
-</div>
-<div class="p-6">
-<h3 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">选择支付方式</h3>
-<div class="grid grid-cols-2 gap-3 mb-6">
-<button class="relative group flex flex-col items-center justify-center py-3 px-2 border-2 border-wechat bg-wechat/5 rounded-xl transition-all cursor-pointer">
-<div class="flex items-center">
-<span class="material-icons text-wechat mr-1.5 text-lg">chat</span>
-<span class="text-sm font-bold text-gray-800 dark:text-gray-100">微信支付</span>
-</div>
-<div class="absolute -bottom-[1px] -right-[1px] bg-wechat text-white rounded-tl-lg rounded-br-lg p-0.5 shadow-sm">
-<span class="material-icons text-[10px] block font-bold">check</span>
-</div>
+<div class="flex flex-col sm:flex-row justify-between items-center gap-4 px-1 pb-1">
+<div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+<button class="flex items-center gap-2 px-6 h-11 bg-gray-100 dark:bg-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-95 border-none outline-none">
+<span class="material-symbols-outlined text-xl">add_photo_alternate</span>
+<span>添加图片</span>
 </button>
-<button class="group flex flex-col items-center justify-center py-3 px-2 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl hover:border-alipay hover:bg-alipay/5 transition-all cursor-pointer">
-<div class="flex items-center">
-<span class="material-icons text-alipay mr-1.5 text-lg">paid</span>
-<span class="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-white">支付宝</span>
+<div class="bg-gray-100 dark:bg-gray-800 p-1 rounded-full flex items-center w-full sm:w-[260px] h-11 relative">
+<button class="flex-1 h-full flex items-center justify-center text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full transition-all relative z-10">
+                                            指令改图
+                                        </button>
+<button class="flex-1 h-full flex items-center justify-center text-sm font-bold text-primary bg-white dark:bg-gray-700 shadow-sm rounded-full transition-all relative z-10 ring-1 ring-black/5 dark:ring-white/5">
+                                            局部重绘
+                                        </button>
+</div>
+</div>
+<div class="flex items-center w-full sm:w-auto">
+<button class="w-full sm:w-auto px-10 h-11 bg-primary hover:bg-primary-hover text-white rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2">
+<span class="font-bold text-sm">立即生成</span>
+<div class="flex items-center bg-white/20 rounded-full px-1.5 py-0.5">
+<span class="text-[10px] font-bold mr-0.5">4</span>
+<span class="material-symbols-outlined text-[12px] text-yellow-300">monetization_on</span>
 </div>
 </button>
 </div>
-<div class="flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-<div class="relative w-40 h-40 bg-gray-100 dark:bg-gray-700 rounded-xl p-2 mb-3 group overflow-hidden">
-<img alt="QR Code" class="w-full h-full object-cover rounded-lg mix-blend-multiply dark:mix-blend-normal opacity-90 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRwPooFMQAzDcKz3dMuyHWE6FHv37OyUSzkk8vmEs0_OqPzLV591wrTh6x11RopZNHtw66vHjePdjO83wwUWSa05IO0D27xsZKdDbNkLX0KqybBIk9aMSGt17Xctw7GE1RHsB2gLXFT5RuK3HXJrVqBkve7z3uxNQ00IBhII0XULB2ilGZtMk_N24FAK_eqy1KOUxmCBXut6zzN8Yy_OC6k4cRTeEkxnoIewabXxLA4z8piregzLvDdaNh03NJ5cKnxGV0tgggL4Lf"/>
-<div class="absolute top-0 left-0 w-full h-1 bg-wechat/50 shadow-[0_0_10px_rgba(7,193,96,0.5)] animate-[scan_2s_ease-in-out_infinite]"></div>
-</div>
-<div class="flex items-center text-sm font-bold text-gray-800 dark:text-gray-200">
-<span class="material-icons text-wechat mr-2">qr_code_scanner</span>
-                                    打开微信扫码支付
-                                </div>
-<p class="text-xs text-gray-400 mt-2">支付即代表同意 <a class="text-primary hover:underline" href="#">《会员服务协议》</a></p>
 </div>
 </div>
 </div>
+</div>
+<div class="w-full flex items-center justify-between px-2 py-2 bg-transparent border-none mb-6">
+<div class="flex items-center shrink-0 mr-3">
+<span class="material-symbols-outlined text-primary text-[22px]">campaign</span>
+</div>
+<div class="flex-1 overflow-hidden h-6 relative">
+<div class="animate-vertical-scroll flex flex-col">
+<div class="h-6 flex items-center gap-2">
+<span class="text-sm font-medium text-gray-600 dark:text-gray-400">系统更新：</span>
+<span class="text-sm text-gray-800 dark:text-gray-200 truncate">万能改图功能现已支持多种光影效果智能调节，创作更真实。</span>
+</div>
+<div class="h-6 flex items-center gap-2">
+<span class="text-sm font-medium text-primary">热门：</span>
+<span class="text-sm text-gray-800 dark:text-gray-200 truncate">“服装图一键上身”模型更新，对大码服装适配度提升 40%。</span>
+</div>
+</div>
+</div>
+<a class="flex items-center gap-0.5 text-xs font-medium text-gray-400 hover:text-primary transition-colors ml-4 shrink-0" href="#">
+                        更多
+                        <span class="material-symbols-outlined text-sm">chevron_right</span>
+</a>
+</div>
+<div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+<div class="bg-primary rounded-2xl p-5 flex items-center justify-between shadow-lg shadow-primary/20 overflow-hidden relative group transition-all duration-300">
+<div class="absolute right-0 top-0 w-32 h-full bg-white/10 -skew-x-12 translate-x-8 pointer-events-none group-hover:translate-x-4 transition-transform duration-500"></div>
+<div class="flex items-center space-x-4 relative z-10 overflow-hidden">
+<div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-white text-xl">diamond</span>
+</div>
+<h3 class="text-white text-base font-bold truncate">开通会员，解锁无限生产力</h3>
+</div>
+<button class="px-5 py-2 bg-white text-primary text-xs font-bold rounded-full hover:bg-gray-100 transition-all active:scale-95 shrink-0 relative z-10 ml-4">
+                            立即升级
+                        </button>
+</div>
+<div class="bg-gradient-to-r from-[#FF6B35] to-[#FF9F1C] rounded-2xl p-5 flex items-center justify-between shadow-lg shadow-orange-500/20 overflow-hidden relative group transition-all duration-300">
+<div class="absolute right-0 top-0 w-32 h-full bg-white/10 -skew-x-12 translate-x-8 pointer-events-none group-hover:translate-x-4 transition-transform duration-500"></div>
+<div class="flex items-center space-x-4 relative z-10 overflow-hidden">
+<div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-white text-xl">card_giftcard</span>
+</div>
+<h3 class="text-white text-base font-bold truncate">邀请好友，享高额返现</h3>
+</div>
+<button class="px-5 py-2 bg-white text-[#FF6B35] text-xs font-bold rounded-full hover:bg-gray-100 transition-all active:scale-95 shrink-0 relative z-10 ml-4">
+                            立即邀请
+                        </button>
+</div>
+</div>
+<div class="w-full pt-6">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+<span class="material-symbols-outlined text-primary mr-2">trending_up</span>
+                            热门功能
+                        </h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<a class="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 group hover:shadow-2xl transition-all duration-300 flex flex-col h-full" href="#">
+<div class="aspect-video bg-gray-200 overflow-hidden shrink-0">
+<img alt="服装图一键上身" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5GHdPxHHLczP7B7qwWgHC9PaW6VXWx5wQHF2jvcYn4biRfCvT-TOnsUWl4AnmNR4j-OWLXUw2BS_45PZa4hXmZbgzp6GzXJRdfFyr2qB3b9fStckpOUaHNb5WPoLxm3zUEUD3EQDGP3xZxnO8YMLpxZ_zgvFMmyKu_N2yKaJ8Yu3KTPTN4jsOEBEZyLmNqF840SEBVG5AUS78ez-p_Crv0aJJL7mp_8iLKGqlPB1UjnGmcVdqbGHlyw4faAAiRgQPp0_VCKlJ73S8"/>
+</div>
+<div class="p-5 flex items-center justify-between">
+<h4 class="font-bold text-base text-gray-900 dark:text-white group-hover:text-primary transition-colors">服装图一键上身</h4>
+<div class="w-8 h-8 rounded-full bg-[#F3F4F6] dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/30 transform group-hover:scale-110 transition-all duration-300">
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</div>
+</div>
+</a>
+<a class="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 group hover:shadow-2xl transition-all duration-300 flex flex-col h-full" href="#">
+<div class="aspect-video bg-gray-200 overflow-hidden shrink-0">
+<img alt="模特背景随心换" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJy91HtTLJE5FsrRE4mm1-PhbWnf9BqXNWSBRKNiNSr43xWE5hv3JhUWVheIuDV2wf6LB9n1l7BigMcDCwZzCdMuQ5gkS87Hgaxis3WXMuMj_iCr6EnNtpmXbNzLQKlgr6zzKpQK3V0YzJkkU6EOMjipLbTeWS9-IpzMVZwEJbueKOgM9cA8EGmEdLpELio3S_LikQnC0TpLPoOUU5VMZ48iU4AC0WEPPO3i2Ho8hLYHZvME-zXI-ael34x5OkZ_7reXUDNZyIcG_G"/>
+</div>
+<div class="p-5 flex items-center justify-between">
+<h4 class="font-bold text-base text-gray-900 dark:text-white group-hover:text-primary transition-colors">模特背景随心换</h4>
+<div class="w-8 h-8 rounded-full bg-[#F3F4F6] dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/30 transform group-hover:scale-110 transition-all duration-300">
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</div>
+</div>
+</a>
+<a class="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 group hover:shadow-2xl transition-all duration-300 flex flex-col h-full" href="#">
+<div class="aspect-video bg-gray-200 overflow-hidden shrink-0">
+<img alt="图片秒变视频" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD56jLqjx7N4qRTrMXiw60X9gUbXwPx42co3Orvz_WlZ47NFvKj37T52hIbrhij_wek2ns0O1V7iMBx9aSeMqRxyiObypFuWU1OdQtvM4KhV79POsSLoM9KcScmdFIpNa71UCW4idcIt3XR1RwiOuOeNui9Wybh7lTc94vokNbVIuXz_LqPemMwRCDTPmymN__iDw8g1ukgiMpfp4b-QY1-Git5-M6IEuZPAbMXQkEnMlnGAVnBb17uTeI08FlbSKBAvDcP-c_P5kVm"/>
+</div>
+<div class="p-5 flex items-center justify-between">
+<h4 class="font-bold text-base text-gray-900 dark:text-white group-hover:text-primary transition-colors">图片秒变视频</h4>
+<div class="w-8 h-8 rounded-full bg-[#F3F4F6] dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/30 transform group-hover:scale-110 transition-all duration-300">
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</div>
+</div>
+</a>
+</div>
+</div>
+<div class="w-full pt-6 pb-12">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6 w-full">
+<div class="relative group aspect-square flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-primary/40 hover:shadow-soft transition-all cursor-pointer">
+<div class="w-[30%] max-w-[64px] aspect-square rounded-full bg-primary/5 flex items-center justify-center mb-5 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+<span class="material-symbols-outlined text-[min(10vw,48px)]">support_agent</span>
+</div>
+<span class="text-lg font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors text-center">企业微信</span>
+<div class="absolute inset-0 bg-white dark:bg-gray-900 rounded-2xl flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 border border-primary/20 p-4 shadow-xl pointer-events-none group-hover:pointer-events-auto">
+<div class="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center mb-2 overflow-hidden border border-gray-200">
+<span class="material-symbols-outlined text-4xl text-gray-300">qr_code_2</span>
+</div>
+<span class="text-[10px] text-gray-500 font-medium">扫码咨询客服</span>
+</div>
+</div>
+<div class="relative group aspect-square flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-primary/40 hover:shadow-soft transition-all cursor-pointer">
+<div class="w-[30%] max-w-[64px] aspect-square rounded-full bg-primary/5 flex items-center justify-center mb-5 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+<span class="material-symbols-outlined text-[min(10vw,48px)]">qr_code_2</span>
+</div>
+<span class="text-lg font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors text-center">小程序入口</span>
+<div class="absolute inset-0 bg-white dark:bg-gray-900 rounded-2xl flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 border border-primary/20 p-4 shadow-xl pointer-events-none group-hover:pointer-events-auto">
+<div class="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center mb-2 overflow-hidden border border-gray-200">
+<span class="material-symbols-outlined text-4xl text-gray-300">widgets</span>
+</div>
+<span class="text-[10px] text-gray-500 font-medium">扫码进入小程序</span>
+</div>
+</div>
+<a class="aspect-square flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-primary/40 hover:shadow-soft transition-all group" href="#">
+<div class="w-[30%] max-w-[64px] aspect-square rounded-full bg-primary/5 flex items-center justify-center mb-5 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+<span class="material-symbols-outlined text-[min(10vw,48px)]">menu_book</span>
+</div>
+<span class="text-lg font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors text-center">帮助教程</span>
+</a>
+<a class="aspect-square flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-primary/40 hover:shadow-soft transition-all group" href="#">
+<div class="w-[30%] max-w-[64px] aspect-square rounded-full bg-primary/5 flex items-center justify-center mb-5 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+<span class="material-symbols-outlined text-[min(10vw,48px)]">rate_review</span>
+</div>
+<span class="text-lg font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors text-center">需求建议</span>
+</a>
 </div>
 </div>
 </div>
 </main>
 </div>
-<style>
-    @keyframes scan {
-        0%, 100% { top: 5%; opacity: 0; }
-        10% { opacity: 1; }
-        90% { opacity: 1; }
-        100% { top: 95%; opacity: 0; }
-    }
-</style>
+</div>
+
 </body></html>

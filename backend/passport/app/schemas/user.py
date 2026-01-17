@@ -61,6 +61,8 @@ class UserResponse(UserBase):
     id: int
     status: int
     role: str
+    member_level: int = 0  # 会员等级: 0-非会员, 1-普通会员, 2-专业会员, 3-企业会员
+    member_expire_time: Optional[datetime] = None  # 会员过期时间
     created_at: Optional[datetime] = None
 
     class Config:

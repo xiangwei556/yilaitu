@@ -16,10 +16,10 @@ class ModelImage(BaseModel):
 
 class ModelBase(BaseModel):
     name: Optional[str] = None
-    gender: str
-    age_group: str
-    body_type: str
-    style: str
+    gender: Optional[str] = None
+    age_group: Optional[str] = None
+    body_type: Optional[str] = None
+    style: Optional[str] = None
     status: str = "enabled"
     type: str = "system"
     user_id: Optional[int] = None

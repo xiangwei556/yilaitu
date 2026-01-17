@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
+import Home from './pages/Home';
 import { ModelGeneration } from './pages/ModelGeneration';
 import { ClothingColorChange } from './pages/ClothingColorChange';
 import { ModelOutfitChanges } from './pages/ModelOutfitChanges';
@@ -55,6 +56,28 @@ import FeedbackManagement from './pages/admin/feedback/FeedbackManagement';
 // @ts-ignore
 import WechatLoginPage from './pages/WechatLoginPage';
 
+// System Images Management
+// @ts-ignore
+import CategoryList from './pages/admin/sys-images/CategoryList';
+// @ts-ignore
+import CategoryForm from './pages/admin/sys-images/CategoryForm';
+// @ts-ignore
+import ModelRefList from './pages/admin/sys-images/ModelRefList';
+// @ts-ignore
+import ModelRefForm from './pages/admin/sys-images/ModelRefForm';
+// @ts-ignore
+import SceneList from './pages/admin/sys-images/SceneList';
+// @ts-ignore
+import SceneForm from './pages/admin/sys-images/SceneForm';
+// @ts-ignore
+import PoseList from './pages/admin/sys-images/PoseList';
+// @ts-ignore
+import PoseForm from './pages/admin/sys-images/PoseForm';
+// @ts-ignore
+import BackgroundList from './pages/admin/sys-images/BackgroundList';
+// @ts-ignore
+import BackgroundForm from './pages/admin/sys-images/BackgroundForm';
+
 
 import { AuthModal } from './pages/components/AuthModal';
 
@@ -66,10 +89,7 @@ function App() {
         {/* Public Routes - Homepage */}
         <Route path="/" element={
           <MainLayout>
-            <div style={{ padding: '24px' }}>
-              <h1>欢迎使用</h1>
-              <p>请从左侧菜单选择功能</p>
-            </div>
+            <Home />
           </MainLayout>
         } />
 
@@ -177,6 +197,23 @@ function App() {
 
            {/* Feedback Management */}
            <Route path="feedback" element={<FeedbackManagement />} />
+
+           {/* System Images Management */}
+           <Route path="sys-images/categories" element={<CategoryList />} />
+           <Route path="sys-images/categories/new" element={<CategoryForm />} />
+           <Route path="sys-images/categories/:id/edit" element={<CategoryForm />} />
+           <Route path="sys-images/model-refs" element={<ModelRefList />} />
+           <Route path="sys-images/model-refs/new" element={<ModelRefForm />} />
+           <Route path="sys-images/model-refs/:id/edit" element={<ModelRefForm />} />
+           <Route path="sys-images/scenes" element={<SceneList />} />
+           <Route path="sys-images/scenes/new" element={<SceneForm />} />
+           <Route path="sys-images/scenes/:id/edit" element={<SceneForm />} />
+           <Route path="sys-images/poses" element={<PoseList />} />
+           <Route path="sys-images/poses/new" element={<PoseForm />} />
+           <Route path="sys-images/poses/:id/edit" element={<PoseForm />} />
+           <Route path="sys-images/backgrounds" element={<BackgroundList />} />
+           <Route path="sys-images/backgrounds/new" element={<BackgroundForm />} />
+           <Route path="sys-images/backgrounds/:id/edit" element={<BackgroundForm />} />
 
            {/* Default redirect to dashboard */}
            <Route index element={<Dashboard />} />

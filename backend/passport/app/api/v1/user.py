@@ -208,10 +208,11 @@ async def get_user_info(
     db: Session = Depends(get_db)
 ):
     """
-    获取当前用户最新信息（包括积分）
+    获取当前用户最新信息（包括积分和会员信息）
     用于前端实时刷新用户状态，不依赖缓存
     """
     from backend.points.models.points import PointsAccount
+    from datetime import datetime
 
     # 获取用户积分
     points_account = db.query(PointsAccount).filter(
@@ -222,13 +223,32 @@ async def get_user_info(
     if points_account:
         total_points = float(points_account.balance_permanent) + float(points_account.balance_limited)
 
-    logger.info(f"获取用户信息: user_id={current_user.id}, points={total_points}")
+    # 计算会员是否过期
+    is_member_expired = True
+    if current_user.member_expire_time:
+        is_member_expired = datetime.now() > current_user.member_expire_time
+
+    # 会员等级文案映射
+    member_level_text_map = {
+        0: "普通用户",
+        1: "普通会员",
+        2: "专业会员",
+        3: "企业会员"
+    }
+    member_level = current_user.member_level or 0
+    member_level_text = member_level_text_map.get(member_level, "普通用户")
+
+    logger.info(f"获取用户信息: user_id={current_user.id}, points={total_points}, member_level={member_level}")
 
     return Response(data={
         "id": current_user.id,
         "nickname": current_user.nickname,
         "avatar": current_user.avatar,
-        "points": total_points
+        "points": total_points,
+        "member_level": member_level,
+        "member_expire_time": current_user.member_expire_time.strftime("%Y-%m-%d") if current_user.member_expire_time else None,
+        "is_member_expired": is_member_expired,
+        "member_level_text": member_level_text
     })
 
 

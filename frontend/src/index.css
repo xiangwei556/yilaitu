@@ -8,6 +8,67 @@
   }
 }
 
+/* Home page animations */
+@keyframes vertical-scroll {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(0); }
+  50% { transform: translateY(-50%); }
+  95% { transform: translateY(-50%); }
+  100% { transform: translateY(-100%); }
+}
+
+.animate-vertical-scroll {
+  animation: vertical-scroll 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.7s ease-out;
+}
+
+.shadow-soft {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Tooltip styles for Universal Edit */
+.tooltip {
+  position: relative;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: max-content;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 4px;
+  padding: 4px 8px;
+  position: absolute;
+  z-index: 50;
+  bottom: 150%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip .tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #333 transparent transparent transparent;
+}
+
 @layer utilities {
   .scrollbar-thin-transparent::-webkit-scrollbar {
     width: 4px;

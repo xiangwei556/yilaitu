@@ -374,7 +374,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           {!isGenerating && (
             <span className="flex items-center gap-1 bg-white/20 rounded-full px-2 py-0.5 text-sm font-normal">
               30
-              <span className="text-base">🪙</span>
+              <img src="/yidou.svg" alt="icon" className="w-4 h-4" />
             </span>
           )}
         </button>

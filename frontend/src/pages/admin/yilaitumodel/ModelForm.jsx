@@ -1,6 +1,7 @@
 import React from 'react';
-import { Form, Input, Select, Button, Upload, message, Card } from 'antd';
+import { Button, Upload, message, Card } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
+import { ProForm, ProFormSelect, ProFormText } from '@ant-design/pro-components';
 import { createModel, updateModel, uploadModelImage, getModelDetail } from '../../../api/yilaitumodel';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -15,7 +16,6 @@ const options = {
 };
 
 const ModelForm = () => {
-  const [form] = Form.useForm();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
@@ -25,7 +25,6 @@ const ModelForm = () => {
   React.useEffect(() => {
     if (isEdit) {
       getModelDetail(id).then((data) => {
-        form.setFieldsValue(data);
         if (data.images && data.images.length > 0) {
           setImages(data.images);
         }
@@ -62,8 +61,6 @@ const ModelForm = () => {
     }
   };
 
-
-
   return (
     <div style={{ 
       padding: '0px 0px', 
@@ -80,56 +77,84 @@ const ModelForm = () => {
           transition: 'all 0.3s ease'
         }}
       >
-        <Form form={form} layout="inline" onFinish={onFinish} style={{ width: '100%', flexWrap: 'wrap', gap: '16px' }}>
-          {/* 隐藏域，默认type为system */}
-          <Form.Item name="type" initialValue="system" hidden>
-            <Input />
-          </Form.Item>
+        <ProForm
+          onFinish={onFinish}
+          submitter={{
+            render: (_, dom) => (
+              <div style={{ marginLeft: 'auto' }}>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  size="large" 
+                  style={{ 
+                    marginRight: 12, 
+                    boxShadow: '0 2px 8px rgba(24, 144, 255, 0.2)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.3)'}
+                  onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 2px 8px rgba(24, 144, 255, 0.2)'}
+                >
+                  {isEdit ? '保存修改' : '提交新增'}
+                </Button>
+                <Button 
+                  size="large" 
+                  onClick={() => navigate('/admin/yilaitumodel/models')}
+                  style={{ transition: 'all 0.3s ease' }}
+                >
+                  返回列表
+                </Button>
+              </div>
+            ),
+          }}
+          layout="inline"
+          style={{ width: '100%', flexWrap: 'wrap', gap: '16px' }}
+        >
+          <ProFormText
+            name="type"
+            initialValue="system"
+            hidden
+          />
           
-          <Form.Item name="gender" label="性别" rules={[{ required: true }]} style={{ marginBottom: 16 }}>
-            <Select options={options.genders} style={{ width: 120, transition: 'all 0.3s ease' }} />
-          </Form.Item>
+          <ProFormSelect
+            name="gender"
+            label="性别"
+            options={options.genders}
+            rules={[{ required: true, message: '请选择性别' }]}
+            style={{ width: 120, transition: 'all 0.3s ease' }}
+          />
 
-          <Form.Item name="age_group" label="年龄分段" rules={[{ required: true }]} style={{ marginBottom: 16 }}>
-            <Select options={options.age_groups} style={{ width: 140, transition: 'all 0.3s ease' }} />
-          </Form.Item>
+          <ProFormSelect
+            name="age_group"
+            label="年龄分段"
+            options={options.age_groups}
+            rules={[{ required: true, message: '请选择年龄分段' }]}
+            style={{ width: 140, transition: 'all 0.3s ease' }}
+          />
 
-          <Form.Item name="body_type" label="体型" rules={[{ required: true }]} style={{ marginBottom: 16 }}>
-            <Select options={options.body_types} style={{ width: 120, transition: 'all 0.3s ease' }} />
-          </Form.Item>
+          <ProFormSelect
+            name="body_type"
+            label="体型"
+            options={options.body_types}
+            rules={[{ required: true, message: '请选择体型' }]}
+            style={{ width: 120, transition: 'all 0.3s ease' }}
+          />
 
-          <Form.Item name="style" label="风格" rules={[{ required: true }]} style={{ marginBottom: 16 }}>
-            <Select options={options.styles} style={{ width: 140, transition: 'all 0.3s ease' }} />
-          </Form.Item>
+          <ProFormSelect
+            name="style"
+            label="风格"
+            options={options.styles}
+            rules={[{ required: true, message: '请选择风格' }]}
+            style={{ width: 140, transition: 'all 0.3s ease' }}
+          />
 
-          <Form.Item name="status" label="状态" initialValue="enabled" style={{ marginBottom: 16 }}>
-            <Select options={options.status} style={{ width: 120, transition: 'all 0.3s ease' }} />
-          </Form.Item>
-
-          <Form.Item style={{ marginBottom: 16, marginLeft: 'auto' }}>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
-              size="large" 
-              style={{ 
-                marginRight: 12, 
-                boxShadow: '0 2px 8px rgba(24, 144, 255, 0.2)',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.3)'}
-              onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 2px 8px rgba(24, 144, 255, 0.2)'}
-            >
-              {isEdit ? '保存修改' : '提交新增'}
-            </Button>
-            <Button 
-              size="large" 
-              onClick={() => navigate('/admin/yilaitumodel/models')}
-              style={{ transition: 'all 0.3s ease' }}
-            >
-              返回列表
-            </Button>
-          </Form.Item>
-        </Form>
+          <ProFormSelect
+            name="status"
+            label="状态"
+            options={options.status}
+            initialValue="enabled"
+            style={{ width: 120, transition: 'all 0.3s ease' }}
+          />
+        </ProForm>
       </Card>
 
       <Card 
@@ -142,7 +167,6 @@ const ModelForm = () => {
       >
         <div style={{ marginTop: 12 }}>
 
-        {/* 图片展示区域 */}
         {images.length > 0 && (
           <div 
             style={{ 
@@ -157,7 +181,6 @@ const ModelForm = () => {
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
           >
-            {/* 总是显示封面图片 */}
             <img 
               src={images.find(img => img.is_cover)?.file_path || images[0].file_path} 
               alt="模特图片"
@@ -169,7 +192,6 @@ const ModelForm = () => {
                 transition: 'all 0.3s ease'
               }}
             />
-            {/* 重新上传按钮 */}
             <div 
               style={{ 
                 position: 'absolute', 
@@ -196,10 +218,8 @@ const ModelForm = () => {
                     }
                     await uploadModelImage(targetId, file, { is_cover: true });
                     message.success('上传成功');
-                    // 重新获取图片信息
                     const data = await getModelDetail(id);
                     if (data.images && data.images.length > 0) {
-                      // 确保images数组始终有正确的图片信息
                       setImages([...data.images]);
                     }
                   } catch (error) {
@@ -218,7 +238,6 @@ const ModelForm = () => {
           </div>
         )}
 
-        {/* 只有当没有图片时才显示上传按钮 */}
         {images.length === 0 && (
           <div style={{ padding: '32px', backgroundColor: '#fafafa', borderRadius: 8, border: '2px dashed #d9d9d9', textAlign: 'center', transition: 'all 0.3s ease' }}>
             <Upload 
@@ -231,10 +250,8 @@ const ModelForm = () => {
                   }
                   await uploadModelImage(targetId, file, { is_cover: true });
                   message.success('上传成功');
-                  // 重新获取图片信息
                   const data = await getModelDetail(id);
                   if (data.images && data.images.length > 0) {
-                    // 确保images数组始终有正确的图片信息
                     setImages([...data.images]);
                   }
                 } catch (error) {

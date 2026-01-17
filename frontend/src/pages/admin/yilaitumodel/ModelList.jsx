@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Tag, Popconfirm, message, Form, Select, Input, Upload, Image, Tooltip, Card } from 'antd';
-import { PlusOutlined, UploadOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
+import React, { useRef } from 'react';
+import { Button, Space, Tag, Popconfirm, message, Image, Tooltip } from 'antd';
+import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   listModels,
   deleteModel,
@@ -11,6 +11,7 @@ import {
   uploadModelImage
 } from '../../../api/yilaitumodel';
 import { useNavigate } from 'react-router-dom';
+import { ProTable } from '@ant-design/pro-components';
 
 const filters = {
   genders: [
@@ -31,32 +32,9 @@ const filters = {
 };
 
 const ModelList = () => {
-  const [form] = Form.useForm();
-  const [data, setData] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const actionRef = useRef();
+  const [selectedRowKeys, setSelectedRowKeys] = React.useState([]);
   const navigate = useNavigate();
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const params = { page, page_size: pageSize, ...form.getFieldsValue() };
-      const res = await listModels(params);
-      setData(res.items);
-      setTotal(res.total);
-    } catch (e) {
-      message.error('加载失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [page, pageSize]);
 
   const columns = [
     { 
@@ -207,7 +185,7 @@ const ModelList = () => {
           {record.status === 'enabled' ? (
             <Button 
               type="link" 
-              onClick={async () => { await changeModelStatus(record.id, 'disabled'); message.success('已禁用'); fetchData(); }} 
+              onClick={async () => { await changeModelStatus(record.id, 'disabled'); message.success('已禁用'); actionRef.current?.reload(); }} 
               style={{ color: '#faad14', fontWeight: '500' }}
             >
               禁用
@@ -215,7 +193,7 @@ const ModelList = () => {
           ) : (
             <Button 
               type="link" 
-              onClick={async () => { await changeModelStatus(record.id, 'enabled'); message.success('已启用'); fetchData(); }} 
+              onClick={async () => { await changeModelStatus(record.id, 'enabled'); message.success('已启用'); actionRef.current?.reload(); }} 
               style={{ color: '#52c41a', fontWeight: '500' }}
             >
               启用
@@ -223,7 +201,7 @@ const ModelList = () => {
           )}
           <Popconfirm 
             title="确定删除该模特？删除后不可恢复" 
-            onConfirm={async () => { await deleteModel(record.id); message.success('已删除'); fetchData(); }}
+            onConfirm={async () => { await deleteModel(record.id); message.success('已删除'); actionRef.current?.reload(); }}
             placement="topRight"
           >
             <Button type="link" danger style={{ fontWeight: '500' }}>删除</Button>
@@ -243,7 +221,7 @@ const ModelList = () => {
     await batchDeleteModels(selectedRowKeys);
     message.success(`已删除 ${selectedRowKeys.length} 个模特`);
     setSelectedRowKeys([]);
-    fetchData();
+    actionRef.current?.reload();
   };
 
   const onBatchDisable = async () => {
@@ -251,7 +229,7 @@ const ModelList = () => {
     await batchChangeModelStatus(selectedRowKeys, 'disabled');
     message.success(`已禁用 ${selectedRowKeys.length} 个模特`);
     setSelectedRowKeys([]);
-    fetchData();
+    actionRef.current?.reload();
   };
 
   const onBatchEnable = async () => {
@@ -259,169 +237,106 @@ const ModelList = () => {
     await batchChangeModelStatus(selectedRowKeys, 'enabled');
     message.success(`已启用 ${selectedRowKeys.length} 个模特`);
     setSelectedRowKeys([]);
-    fetchData();
+    actionRef.current?.reload();
   };
 
   const onCreate = async (values) => {
     const res = await createModel(values);
     message.success('新增成功');
-    fetchData();
+    actionRef.current?.reload();
     return res;
   };
 
   return (
-    <div style={{ padding: '0px 0px', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-
-        {/* 批量操作区域 */}
-        <div style={{ 
-          marginBottom: 4, 
-          padding: '2px 0', 
-          backgroundColor: 'transparent', 
-          borderRadius: 0,
-          border: 'none',
-          transition: 'all 0.3s ease'
-        }}>
-          <Space wrap size="middle">
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
-              onClick={() => navigate('/admin/yilaitumodel/models/new')} 
-              size="large"
-              style={{ boxShadow: '0 2px 8px rgba(24, 144, 255, 0.2)', transition: 'all 0.3s ease' }}
-              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.3)'}
-              onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 2px 8px rgba(24, 144, 255, 0.2)'}
-            >
-              新增模特
-            </Button>
-            <Button 
-              onClick={onBatchEnable} 
-              size="large" 
-              disabled={selectedRowKeys.length === 0}
-              style={{ transition: 'all 0.3s ease' }}
-            >
-              批量启用
-            </Button>
-            <Button 
-              onClick={onBatchDisable} 
-              size="large" 
-              disabled={selectedRowKeys.length === 0}
-              style={{ transition: 'all 0.3s ease' }}
-            >
-              批量禁用
-            </Button>
-            <Popconfirm title="确定批量删除所选模特？删除后不可恢复" onConfirm={onBatchDelete}>
-              <Button 
-                danger 
-                size="large" 
-                disabled={selectedRowKeys.length === 0}
-                style={{ transition: 'all 0.3s ease' }}
-              >
-                批量删除
-              </Button>
-            </Popconfirm>
-            <Button 
-              onClick={() => { form.resetFields(); setPage(1); fetchData(); }} 
-              icon={<ReloadOutlined />} 
-              size="large"
-              style={{ transition: 'all 0.3s ease' }}
-            >
-              刷新数据
-            </Button>
-            {selectedRowKeys.length > 0 && (
-              <span style={{ 
-                color: '#1890ff', 
-                fontWeight: '500',
-                fontSize: '14px',
-                padding: '8px 12px',
-                backgroundColor: '#e6f7ff',
-                borderRadius: 4
-              }}>
-                已选择 {selectedRowKeys.length} 个模特
-              </span>
-            )}
-          </Space>
-        </div>
-
-        {/* 筛选表单区域 */}
-        <Card type="inner" title={<span><FilterOutlined /> 筛选条件</span>} size="small" style={{ marginBottom: 16, transition: 'all 0.3s ease', border: 'none', boxShadow: 'none' }}>
-          <Form form={form} layout="inline" onFinish={() => { setPage(1); fetchData(); }} style={{ display: 'flex', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px' }}>
-            <Form.Item name="gender" label="性别" style={{ marginBottom: 16 }}>
-              <Select allowClear style={{ width: 120, transition: 'all 0.3s ease' }} options={filters.genders} />
-            </Form.Item>
-            <Form.Item name="age_group" label="年龄" style={{ marginBottom: 16 }}>
-              <Select allowClear style={{ width: 140, transition: 'all 0.3s ease' }} options={filters.age_groups} />
-            </Form.Item>
-            <Form.Item name="body_type" label="体型" style={{ marginBottom: 16 }}>
-              <Select allowClear style={{ width: 120, transition: 'all 0.3s ease' }} options={filters.body_types} />
-            </Form.Item>
-            <Form.Item name="style" label="风格" style={{ marginBottom: 16 }}>
-              <Select allowClear style={{ width: 140, transition: 'all 0.3s ease' }} options={filters.styles} />
-            </Form.Item>
-            <Form.Item name="status" label="状态" style={{ marginBottom: 16 }}>
-              <Select allowClear style={{ width: 120, transition: 'all 0.3s ease' }} options={filters.status} />
-            </Form.Item>
-            <Form.Item style={{ marginBottom: 16, marginLeft: 'auto' }}>
-              <Space size="middle">
-                <Button 
-                  type="primary" 
-                  htmlType="submit" 
-                  size="middle"
-                  style={{ transition: 'all 0.3s ease', boxShadow: '0 2px 8px rgba(24, 144, 255, 0.2)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.3)'}
-                  onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 2px 8px rgba(24, 144, 255, 0.2)'}
-                >
-                  筛选
-                </Button>
-                <Button 
-                  onClick={() => { form.resetFields(); setPage(1); fetchData(); }} 
-                  size="middle"
-                  style={{ transition: 'all 0.3s ease' }}
-                >
-                  重置
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
-  
-
-        {/* 表格区域 */}
-        <div style={{ marginBottom: 16 }}>
-          <Table
-            rowKey="id"
-            columns={columns}
-            dataSource={data}
-            loading={loading}
-            rowSelection={rowSelection}
-            pagination={{
-              current: page,
-              pageSize,
-              total,
-              onChange: setPage,
-              onShowSizeChange: (_, size) => setPageSize(size),
-              showTotal: (total) => `共 ${total} 条记录`,
-              size: 'middle'
-            }}
-            style={{ 
-              width: '100%'
-            }}
-            bordered={false}
-            rowClassName={(record, index) => index % 2 === 0 ? 'even-row' : 'odd-row'}
-            rowStyle={{
-              transition: 'all 0.3s ease',
-              cursor: 'pointer'
-            }}
-            onRow={(record) => ({
-              onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = '#f5f7fa';
-              },
-              onMouseLeave: (e) => {
-                e.currentTarget.style.backgroundColor = '';
-              }
-            })}
-          />
-        </div>
-      </Card>
-    </div>
+    <ProTable
+      columns={columns}
+      actionRef={actionRef}
+      request={async (params) => {
+        const res = await listModels({
+          page: params.current,
+          page_size: params.pageSize,
+          gender: params.gender,
+          age_group: params.age_group,
+          body_type: params.body_type,
+          style: params.style,
+          status: params.status,
+        });
+        return {
+          data: res.items || [],
+          success: true,
+          total: res.total || 0,
+        };
+      }}
+      rowKey="id"
+      rowSelection={rowSelection}
+      search={{
+        filterType: 'light',
+      }}
+      form={{
+        syncToUrl: (values, type) => {
+          if (type === 'get') {
+            return {
+              ...values,
+              current: 1,
+            };
+          }
+          return values;
+        },
+      }}
+      pagination={{
+        showSizeChanger: true,
+        showTotal: (total) => `共 ${total} 条记录`,
+      }}
+      dateFormatter="string"
+      headerTitle="模特人像管理"
+      toolBarRender={() => [
+        <Button
+          key="create"
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => navigate('/admin/yilaitumodel/models/new')}
+        >
+          新增模特
+        </Button>,
+        <Button
+          key="batchEnable"
+          onClick={onBatchEnable}
+          disabled={selectedRowKeys.length === 0}
+        >
+          批量启用
+        </Button>,
+        <Button
+          key="batchDisable"
+          onClick={onBatchDisable}
+          disabled={selectedRowKeys.length === 0}
+        >
+          批量禁用
+        </Button>,
+        <Popconfirm
+          key="batchDelete"
+          title="确定批量删除所选模特？删除后不可恢复"
+          onConfirm={onBatchDelete}
+        >
+          <Button
+            danger
+            disabled={selectedRowKeys.length === 0}
+          >
+            批量删除
+          </Button>
+        </Popconfirm>,
+        <Button
+          key="refresh"
+          icon={<ReloadOutlined />}
+          onClick={() => actionRef.current?.reload()}
+        >
+          刷新数据
+        </Button>,
+      ]}
+      columnsState={{
+        persistenceKey: 'model-list-columns',
+        persistenceType: 'localStorage',
+      }}
+    />
   );
 };
 

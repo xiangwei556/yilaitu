@@ -1,4 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { getPublicBackgrounds } from '../../../api/sysImages';
+
+interface Background {
+  id: number;
+  name: string;
+  image_url: string;
+  status: string;
+}
 
 interface LeftPanelProps {
   isGenerating: boolean;
@@ -24,8 +32,33 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   refreshImageRecordsRef
 }) => {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  const [selectedBackground, setSelectedBackground] = useState<string>('1');
+  const [selectedBackground, setSelectedBackground] = useState<string>('smart');
+  const [backgrounds, setBackgrounds] = useState<Background[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasMounted = useRef(false);
+
+  // 获取背景图列表
+  useEffect(() => {
+    if (hasMounted.current) return;
+    hasMounted.current = true;
+
+    const fetchBackgrounds = async () => {
+      try {
+        const res = await getPublicBackgrounds({ page: 1, page_size: 100 });
+        console.log('背景图API返回:', res);
+        if (res?.items) {
+          setBackgrounds(res.items);
+          // 如果有背景图，默认选中第一个
+          if (res.items.length > 0) {
+            setSelectedBackground(String(res.items[0].id));
+          }
+        }
+      } catch (error) {
+        console.error('获取背景图失败:', error);
+      }
+    };
+    fetchBackgrounds();
+  }, []);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -79,7 +112,12 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
 
   const handleReset = () => {
     setUploadedImages([]);
-    setSelectedBackground('1');
+    // 重置为智能背景或第一个背景图
+    if (backgrounds.length > 0) {
+      setSelectedBackground(String(backgrounds[0].id));
+    } else {
+      setSelectedBackground('smart');
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -139,7 +177,8 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           <section className="space-y-4">
             <h2 className="text-base font-semibold">选择更换的背景</h2>
             <div className="grid grid-cols-3 gap-3">
-              <div 
+              {/* 智能背景 */}
+              <div
                 onClick={() => handleBackgroundClick('smart')}
                 className={selectedBackground === 'smart' ? "aspect-[3/4] rounded-xl bg-slate-100 dark:bg-surface-dark border-2 border-primary relative cursor-pointer flex flex-col items-center justify-center group overflow-hidden transition-all" : "aspect-[3/4] rounded-xl bg-slate-100 dark:bg-surface-dark border border-transparent hover:border-border-dark dark:hover:border-border-light relative cursor-pointer flex flex-col items-center justify-center group overflow-hidden transition-all"}
               >
@@ -150,62 +189,26 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
                 <p className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">智能背景</p>
               </div>
 
-              <div 
-                onClick={() => handleBackgroundClick('1')}
-                className={selectedBackground === '1' ? "aspect-[3/4] rounded-xl border-2 border-primary relative cursor-pointer group overflow-hidden transition-all" : "aspect-[3/4] rounded-xl bg-slate-100 dark:bg-surface-dark border border-transparent hover:border-border-dark dark:hover:border-border-light relative cursor-pointer group overflow-hidden transition-all"}
-              >
-                <img alt="纯色背景" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQQVXbRbdDu_UJoN68aE7H8BtftZHTJ_IaM-pUAkbyeE9sdPJxZ-_efrgDXwiVm1bpd_zvsq8EMdUWoBZeDF7eSKu9KKHAFNdV1KEJZWS_QX6RMSLyW0aNs3-8OXMMAmVCqJgoUYngzl8G00uVLvRTnTMVqblbRO73ntCxs91z-nOjBSsnjBnbF5I0ZdyyrH88zOiagVh0Klqnhci-xHRl1N4SRkKEQd1ODzM7fTp-8UR6uNCjSGoTQJAlK6gfyFPa8Lm6a_p_Nso"/>
-                <div className="absolute inset-0 bg-black/10 flex items-end justify-center pb-2">
-                  <span className="text-xs font-medium text-white shadow-sm">纯白影棚</span>
+              {/* 动态背景图列表 */}
+              {backgrounds.map((bg, index) => (
+                <div
+                  key={bg.id}
+                  onClick={() => handleBackgroundClick(String(bg.id))}
+                  className={selectedBackground === String(bg.id) ? "aspect-[3/4] rounded-xl border-2 border-primary relative cursor-pointer group overflow-hidden transition-all" : "aspect-[3/4] rounded-xl bg-slate-100 dark:bg-surface-dark border border-transparent hover:border-border-dark dark:hover:border-border-light relative cursor-pointer group overflow-hidden transition-all"}
+                >
+                  <img alt={bg.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" src={bg.image_url}/>
+                  <div className="absolute inset-0 bg-black/10 flex items-end justify-center pb-2">
+                    <span className="text-xs font-medium text-white shadow-sm">{bg.name}</span>
+                  </div>
+                  {selectedBackground === String(bg.id) ? (
+                    <div className="absolute top-2 right-2 z-10 w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-surface-dark">
+                      {index + 1}
+                    </div>
+                  ) : (
+                    <div className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full border border-white/60 bg-black/20"></div>
+                  )}
                 </div>
-                <div className="absolute top-2 right-2 z-10 w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-surface-dark">
-                  1
-                </div>
-              </div>
-
-              <div 
-                onClick={() => handleBackgroundClick('2')}
-                className={selectedBackground === '2' ? "aspect-[3/4] rounded-xl border-2 border-primary relative cursor-pointer group overflow-hidden transition-all" : "aspect-[3/4] rounded-xl bg-slate-100 dark:bg-surface-dark border border-transparent hover:border-border-dark dark:hover:border-border-light relative cursor-pointer group overflow-hidden transition-all"}
-              >
-                <img alt="都市街景" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAFZBvey8Tyn9RKPzWG1WBk8vZ-iVKm6OyqiU2k5MlFnc-VgRcDEnuIvp221RDHun8khmUhk5t1_EdEpwFJ6CsfCUonZytkWakcwQB8dUI_yV118PqFh7H1idMLwUnDcbVrScyqrO76HlsMRi9MVklNhvkNLmeyYIr6KsG_QmPGjGcIxntsssFUPts5rtvNBPMjAgojWPrvw5e1E-V6htw0ATuzka_D0w5smLACQQEMXsl4tMFbAlWWZYAxVApTvzBDAgFkMEHmGk"/>
-                <div className="absolute inset-0 bg-black/10 flex items-end justify-center pb-2">
-                  <span className="text-xs font-medium text-white shadow-sm">都市街头</span>
-                </div>
-                <div className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full border border-white/60 bg-black/20"></div>
-              </div>
-
-              <div 
-                onClick={() => handleBackgroundClick('3')}
-                className={selectedBackground === '3' ? "aspect-[3/4] rounded-xl border-2 border-primary relative cursor-pointer group overflow-hidden transition-all" : "aspect-[3/4] rounded-xl bg-slate-100 dark:bg-surface-dark border border-transparent hover:border-border-dark dark:hover:border-border-light relative cursor-pointer group overflow-hidden transition-all"}
-              >
-                <img alt="自然风光" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0NVpTaIFAi7-jTOw_xxN6mw3xToxsTpQryP272qoud9wgXsJO1tRsPGc9Q-hAnUe6Sl-5W7UXEQgAplVuRW4UUY86YALyXfpnHDGMMgSB1-DFdgm-puNQa1jvDS11870HnJlW6fgek6GZel8YwnffUszd60tISgMqLpEat9rvUDQMSCXsklx2YeaOPS3Ek8NfzTiSDytTo_U_565b30CnInL78vGvSzE8fBp1vyYNgosPUWE_ii235kO1IgTUcrM28RGpJbS8PEY"/>
-                <div className="absolute inset-0 bg-black/10 flex items-end justify-center pb-2">
-                  <span className="text-xs font-medium text-white shadow-sm">清新自然</span>
-                </div>
-                <div className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full border border-white/60 bg-black/20"></div>
-              </div>
-
-              <div 
-                onClick={() => handleBackgroundClick('4')}
-                className={selectedBackground === '4' ? "aspect-[3/4] rounded-xl border-2 border-primary relative cursor-pointer group overflow-hidden transition-all" : "aspect-[3/4] rounded-xl bg-slate-100 dark:bg-surface-dark border border-transparent hover:border-border-dark dark:hover:border-border-light relative cursor-pointer group overflow-hidden transition-all"}
-              >
-                <img alt="室内家居" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhmxlUnZEaDM6kZc8CEBJvsc_gQ42_wDa5PkfJrIGQD1c74k_orEWhu09FTESk9ZqqN7Y9XxXEHg_U_8QoXShvocOy13R8oetmgkMdlh68iVrjTw7Nim_YqmiB2VKef0eBfJzGcv2izBpupLVqpRombMYEPwJJLPIEd380XU_rN1l9iXlq_UzwxgBSf8Mz96sqOmcV3pZqJK5b-gLBCwP81yn9vfQTdhBUuNyq3vc1j6fe91-QwaRSDiSxMALRahY0oxm0QsGDKAQ"/>
-                <div className="absolute inset-0 bg-black/10 flex items-end justify-center pb-2">
-                  <span className="text-xs font-medium text-white shadow-sm">温馨家居</span>
-                </div>
-                <div className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full border border-white/60 bg-black/20"></div>
-              </div>
-
-              <div 
-                onClick={() => handleBackgroundClick('5')}
-                className={selectedBackground === '5' ? "aspect-[3/4] rounded-xl border-2 border-primary relative cursor-pointer group overflow-hidden transition-all" : "aspect-[3/4] rounded-xl bg-slate-100 dark:bg-surface-dark border border-transparent hover:border-border-dark dark:hover:border-border-light relative cursor-pointer group overflow-hidden transition-all"}
-              >
-                <img alt="海边度假" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjl2f8KIboaGVxC9mcsdebPSK5dbY3ezeZ2aPHO0bnyGQwXAjk44ASJfSd0eGXRvpGrZfrPkaatGmLNgcKpdQakvfNjkOoU8L6SY1GnSxJMjW1jqZ5gOwae5La84w-VAt-RLbB-ZrWo_YqUm2LqOe4UXEjRKl4PNx6uMkCt9NpaPEaI4SfOkTzOC2OAUUcZijdS3cnbFsa-JqkreXblsjjr5I6yIGUluhZGt_jHMorpPSutNPnKIJMV4BJvt6lqR6e2xkywOMJ5EQ"/>
-                <div className="absolute inset-0 bg-black/10 flex items-end justify-center pb-2">
-                  <span className="text-xs font-medium text-white shadow-sm">海边度假</span>
-                </div>
-                <div className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full border border-white/60 bg-black/20"></div>
-              </div>
+              ))}
             </div>
           </section>
         </div>
@@ -222,7 +225,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           {!isGenerating && (
             <span className="flex items-center gap-1 bg-white/20 rounded-full px-2 py-0.5 text-sm font-normal">
               20
-              <span className="text-base">🪙</span>
+              <img src="/yidou.svg" alt="icon" className="w-4 h-4" />
             </span>
           )}
         </button>

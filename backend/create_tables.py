@@ -15,6 +15,7 @@ from backend.yilaitumodel.models import model as yilaitumodel_model
 from backend.original_image_record.models import original_image_record
 from backend.feedback.models import feedback
 from backend.payment.models import payment  # Import payment models
+from backend.sys_images.models import sys_image  # Import system images models
 
 def init_tables():
     print("Creating tables for new modules...")

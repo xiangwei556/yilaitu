@@ -1,147 +1,208 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, InputNumber, Switch, message, Space } from 'antd';
+import React, { useState } from 'react';
+import { ProTable, ModalForm, ProFormText, ProFormTextArea, ProFormSelect, ProFormDigit, ProFormSwitch } from '@ant-design/pro-components';
+import { Button, message, Switch } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import request from '../../../utils/request';
 
 const RuleConfig = () => {
-  const [rules, setRules] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
+  const actionRef = React.useRef();
+  const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  
-  // 类型映射，与会员管理模块保持一致
+
   const typeMap = {
-    'non_member': '非会员',
-    'ordinary': '普通会员',
-    'professional': '专业会员',
-    'enterprise': '企业会员'
+    non_member: '非会员',
+    ordinary: '普通会员',
+    professional: '专业会员',
+    enterprise: '企业会员',
   };
 
-  const fetchRules = async () => {
-    setLoading(true);
+  const fetchDetail = async () => {
+    const res = await request.get(`/points/admin/rules/${editingId}`);
+    return res;
+  };
+
+  const handleSubmit = async (values) => {
     try {
-      const res = await request.get('/points/admin/rules');
-      setRules(res);
-    } catch (error) {
-      message.error('获取规则失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRules();
-  }, []);
-
-  const handleAdd = () => {
-    form.resetFields();
-    setEditingId(null);
-    setIsModalVisible(true);
-  };
-
-  const handleEdit = (record) => {
-    setEditingId(record.id);
-    form.setFieldsValue(record);
-    setIsModalVisible(true);
-  };
-
-  const handleOk = async () => {
-    try {
-      const values = await form.validateFields();
-      console.log('Form values:', values);
-      let response;
       if (editingId) {
-        console.log('Sending PUT request to /points/admin/rules/' + editingId);
-        response = await request.put(`/points/admin/rules/${editingId}`, values);
-        console.log('PUT response:', response);
+        await request.put(`/points/admin/rules/${editingId}`, values);
         message.success('规则已更新');
       } else {
-        console.log('Sending POST request to /points/admin/rules');
-        response = await request.post('/points/admin/rules', values);
-        console.log('POST response:', response);
+        await request.post('/points/admin/rules', values);
         message.success('规则已创建');
       }
-      setIsModalVisible(false);
-      setEditingId(null);
-      fetchRules();
+      setModalVisible(false);
+      actionRef.current?.reload();
+      return true;
     } catch (error) {
-      // 显示后端返回的详细错误信息
-      console.log('Error:', error);
-      console.log('Error response:', error.response);
       const errorMsg = error.response?.data?.detail || '操作失败';
       message.error(errorMsg);
+      return false;
     }
   };
 
   const columns = [
-    { title: '代码', dataIndex: 'code', key: 'code' },
-    { title: '名称', dataIndex: 'name', key: 'name' },
-    { 
-      title: '类型', 
-      dataIndex: 'type', 
-      key: 'type',
-      render: (type) => typeMap[type] || type
+    {
+      title: '代码',
+      dataIndex: 'code',
+      width: 150,
     },
-    { title: '数量', dataIndex: 'amount', key: 'amount' },
-    { 
-      title: '规则说明', 
-      dataIndex: 'description', 
-      key: 'description',
+    {
+      title: '名称',
+      dataIndex: 'name',
+      width: 150,
+    },
+    {
+      title: '类型',
+      dataIndex: 'type',
+      width: 120,
+      valueType: 'select',
+      valueEnum: {
+        non_member: { text: '非会员' },
+        ordinary: { text: '普通会员' },
+        professional: { text: '专业会员' },
+        enterprise: { text: '企业会员' },
+      },
+      render: (_, record) => typeMap[record.type] || record.type,
+    },
+    {
+      title: '数量',
+      dataIndex: 'amount',
+      width: 100,
+      search: false,
+    },
+    {
+      title: '规则说明',
+      dataIndex: 'description',
+      width: 250,
       ellipsis: true,
-      tooltip: (text) => text
+      search: false,
     },
-    { 
-      title: '启用', 
-      dataIndex: 'is_active', 
-      key: 'is_active',
-      render: (active) => <Switch checked={active} disabled />
+    {
+      title: '启用',
+      dataIndex: 'is_active',
+      width: 100,
+      valueType: 'select',
+      valueEnum: {
+        true: { text: '是', status: 'Success' },
+        false: { text: '否', status: 'Default' },
+      },
+      render: (_, record) => <Switch checked={record.is_active} disabled />,
     },
-    { 
-      title: '操作', 
+    {
+      title: '操作',
       key: 'action',
+      width: 120,
+      fixed: 'right',
+      search: false,
       render: (_, record) => (
-        <Space size="middle">
-          <Button type="primary" onClick={() => handleEdit(record)}>编辑</Button>
-        </Space>
+        <Button
+          type="link"
+          size="small"
+          onClick={() => {
+            setEditingId(record.id);
+            setModalVisible(true);
+          }}
+        >
+          编辑
+        </Button>
       ),
     },
   ];
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={handleAdd}>新增规则</Button>
-      </div>
-      <Table columns={columns} dataSource={rules} rowKey="id" loading={loading} />
-      
-      <Modal title={editingId ? "编辑积分规则" : "新增积分规则"} open={isModalVisible} onOk={handleOk} onCancel={() => setIsModalVisible(false)}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="code" label="规则代码" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="name" label="规则名称" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="type" label="类型" rules={[{ required: true }]}>
-            <Select>
-                <Select.Option value="non_member">非会员</Select.Option>
-                <Select.Option value="ordinary">普通会员</Select.Option>
-                <Select.Option value="professional">专业会员</Select.Option>
-                <Select.Option value="enterprise">企业会员</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="amount" label="积分数量" rules={[{ required: true }]}>
-            <InputNumber style={{ width: '100%' }} precision={0} />
-          </Form.Item>
-          <Form.Item name="description" label="规则说明">
-            <Input.TextArea rows={3} placeholder="请输入规则说明" />
-          </Form.Item>
-          <Form.Item name="is_active" label="启用" valuePropName="checked" initialValue={true}>
-            <Switch />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+    <>
+      <ProTable
+        columns={columns}
+        actionRef={actionRef}
+        request={async () => {
+          const res = await request.get('/points/admin/rules');
+          return {
+            data: res || [],
+            success: true,
+            total: (res || []).length,
+          };
+        }}
+        rowKey="id"
+        search={false}
+        pagination={false}
+        dateFormatter="string"
+        headerTitle="积分规则"
+        toolBarRender={() => [
+          <Button
+            key="create"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingId(null);
+              setModalVisible(true);
+            }}
+          >
+            新增规则
+          </Button>,
+        ]}
+      />
+
+      <ModalForm
+        title={editingId ? '编辑积分规则' : '新增积分规则'}
+        open={modalVisible}
+        onOpenChange={setModalVisible}
+        onFinish={handleSubmit}
+        request={editingId ? fetchDetail : undefined}
+        modalProps={{
+          destroyOnClose: true,
+        }}
+        initialValues={{
+          is_active: true,
+        }}
+      >
+        <ProFormText
+          name="code"
+          label="规则代码"
+          placeholder="请输入规则代码"
+          rules={[{ required: true, message: '请输入规则代码' }]}
+        />
+
+        <ProFormText
+          name="name"
+          label="规则名称"
+          placeholder="请输入规则名称"
+          rules={[{ required: true, message: '请输入规则名称' }]}
+        />
+
+        <ProFormSelect
+          name="type"
+          label="类型"
+          options={[
+            { label: '非会员', value: 'non_member' },
+            { label: '普通会员', value: 'ordinary' },
+            { label: '专业会员', value: 'professional' },
+            { label: '企业会员', value: 'enterprise' },
+          ]}
+          rules={[{ required: true, message: '请选择类型' }]}
+        />
+
+        <ProFormDigit
+          name="amount"
+          label="积分数量"
+          placeholder="请输入积分数量"
+          min={0}
+          precision={0}
+          rules={[{ required: true, message: '请输入积分数量' }]}
+        />
+
+        <ProFormTextArea
+          name="description"
+          label="规则说明"
+          placeholder="请输入规则说明"
+          fieldProps={{ rows: 3 }}
+        />
+
+        <ProFormSwitch
+          name="is_active"
+          label="启用"
+        />
+      </ModalForm>
+    </>
   );
 };
 

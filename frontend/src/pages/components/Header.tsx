@@ -8,19 +8,17 @@ import { UserOutlined } from '@ant-design/icons';
 import { Star, ShoppingBag, FileText, Shield, Settings, LogOut, ChevronRight, Bell, BellOff } from 'lucide-react';
 import { webSocketService } from '../../services/WebSocketService';
 import { MessageCenter } from './MessageCenter';
-import { AccountSettingsModal } from './AccountSettingsModal';
 import { getUnreadCount, getMyMessages, Message, markMessageRead } from '../../api/message';
 import { Spin, Empty } from 'antd';
 import dayjs from 'dayjs';
 
 
 export const Header: React.FC = () => {
-  const { openAuthModal, isLoggedIn, user, logout, refreshUserInfo } = useAuthStore();
+  const { openAuthModal, isLoggedIn, user, logout } = useAuthStore();
   const [showUserPopover, setShowUserPopover] = useState(false);
   const [membershipModalOpen, setMembershipModalOpen] = useState(false);
   const [ordersModalOpen, setOrdersModalOpen] = useState(false);
   const [pointsModalOpen, setPointsModalOpen] = useState(false);
-  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
   const [messageCenterOpen, setMessageCenterOpen] = useState(false);
   const [defaultTab, setDefaultTab] = useState<'membership' | 'points'>('membership');
   const [unreadCount, setUnreadCount] = useState(0);
@@ -45,14 +43,12 @@ export const Header: React.FC = () => {
   useEffect(() => {
     if (isLoggedIn && user) {
       const currentUserId = Number(user.id);
-
+      
       if (userIdRef.current !== currentUserId) {
         console.log('=== Connecting WebSocket for user ===', 'userId:', currentUserId);
         userIdRef.current = currentUserId;
         webSocketService.connect(currentUserId);
         fetchUnread();
-        // 初始化时刷新用户信息
-        refreshUserInfo();
       }
     } else {
       if (userIdRef.current !== null) {
@@ -290,21 +286,69 @@ export const Header: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center bg-brand-dark/5 dark:bg-brand-dark/20 rounded-full pl-5 pr-1 py-1 border border-brand-dark/10 dark:border-brand-dark/30 ml-3">
-                <div className="flex items-center mr-3 gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setPointsModalOpen(true)}>
-                  <span className="material-symbols-outlined text-[20px] text-yellow-500 drop-shadow-sm">monetization_on</span>
-                  <div className="flex flex-col items-start leading-none justify-center">
-                    <span className="text-[10px] text-brand-dark/70 dark:text-brand-dark/60 font-medium mb-0.5">我的积分</span>
+              {/* 右上角功能区 - 带 hover 浮层 */}
+              <div className="relative group ml-3">
+                {/* 触发区域 */}
+                <div className="flex items-center bg-brand-dark/5 dark:bg-brand-dark/20 rounded-full pl-3 pr-1 py-1 border border-brand-dark/10 dark:border-brand-dark/30 cursor-default transition-all h-[44px]">
+                  <div className="flex items-center mr-3 gap-1.5">
+                    {/* 衣豆图标 */}
+                    <img src="/yidou.svg" alt="衣豆" className="w-5 h-5" />
                     <span className="text-sm font-bold text-brand-dark dark:text-brand-light">{(user.points || 0).toLocaleString()}</span>
                   </div>
+                  <button
+                    onClick={() => openMembershipModal('membership')}
+                    className="px-3 py-1.5 h-full text-xs font-bold text-white bg-[#3713ec] rounded-full shadow-md shadow-[#3713ec]/20 hover:bg-[#3713ec]/90 hover:shadow-[#3713ec]/30 transition-all flex items-center"
+                  >
+                    <span className="material-symbols-outlined text-[13px] mr-1">diamond</span>
+                    升级会员
+                  </button>
                 </div>
-                <button 
-                  onClick={() => openMembershipModal('membership')}
-                  className="px-4 py-2 text-xs font-bold text-white bg-[#3713ec] rounded-full shadow-md shadow-[#3713ec]/20 hover:bg-[#3713ec]/90 hover:shadow-[#3713ec]/30 transition-all duration-300 flex items-center"
-                >
-                  <span className="material-symbols-outlined text-sm mr-1">diamond</span>
-                  开通会员
-                </button>
+
+                {/* Hover 浮层 */}
+                <div className="absolute right-0 top-full mt-2 w-72 bg-[#3713ec] rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-[60] p-5 text-white overflow-hidden">
+                  {/* 会员信息区域 */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <h4 className="text-lg font-bold mb-1">
+                        {user.is_member_expired ? '开通会员享更多权益' : user.member_level_text}
+                      </h4>
+                      {!user.is_member_expired && user.member_expire_time && (
+                        <p className="text-[11px] opacity-70">
+                          {dayjs(user.member_expire_time).format('YYYY.MM.DD')}到期
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => openMembershipModal('membership')}
+                      className="bg-white text-[#3713ec] text-xs font-bold px-4 py-1.5 rounded-full hover:bg-white/90 transition-colors"
+                    >
+                      {user.is_member_expired ? '开通会员' : '升级会员'}
+                    </button>
+                  </div>
+
+                  {/* 积分信息区域 */}
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="text-[11px] opacity-70 mb-1">当前衣豆</p>
+                      <p className="text-4xl font-bold">{(user.points || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-3">
+                      <a
+                        className="text-xs hover:underline flex items-center cursor-pointer"
+                        onClick={() => setPointsModalOpen(true)}
+                      >
+                        衣豆明细
+                        <span className="material-symbols-outlined text-sm ml-0.5">chevron_right</span>
+                      </a>
+                      <button
+                        onClick={() => openMembershipModal('points')}
+                        className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-xs font-medium px-4 py-2 rounded-full transition-colors"
+                      >
+                        购买衣豆包
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="ml-3 relative" onMouseEnter={() => setShowUserPopover(true)} onMouseLeave={() => setShowUserPopover(false)}>
@@ -328,30 +372,47 @@ export const Header: React.FC = () => {
                            </div>
                         </div>
                         
-                        {/* Blue Card */}
-                        <div className="bg-[rgb(55_19_236/var(--tw-bg-opacity,1))] rounded-xl p-4 text-white shadow-lg shadow-[rgb(55_19_236/var(--tw-bg-opacity,0.3))]">
-                          <div className="flex items-center justify-between mb-6">
-                            <span className="text-sm font-medium opacity-90">开通会员享受更多功能</span>
-                            <button 
+                        {/* Blue Card - 会员信息卡片 */}
+                        <div className="bg-[rgb(55_19_236/var(--tw-bg-opacity,1))] rounded-xl p-4 text-white shadow-lg shadow-[rgb(55_19_236/var(--tw-bg-opacity,0.3))] relative overflow-hidden">
+                          {/* 装饰性背景 */}
+                          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+
+                          <div className="flex items-center justify-between mb-6 relative z-10">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-white">
+                                {user.is_member_expired ? '普通用户' : user.member_level_text}
+                              </span>
+                              {!user.is_member_expired && user.member_expire_time ? (
+                                <span className="text-[10px] font-medium text-white/70 mt-0.5">
+                                  {dayjs(user.member_expire_time).format('YYYY.MM.DD')}到期
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-medium text-white/70 mt-0.5">
+                                  开通会员享受更多功能
+                                </span>
+                              )}
+                            </div>
+                            <button
                               onClick={() => openMembershipModal('membership')}
-                              className="bg-white text-[rgb(55_19_236/var(--tw-bg-opacity,1))] text-xs font-bold px-3 py-1 rounded-full hover:bg-gray-50 transition-colors"
+                              className="bg-white text-[rgb(55_19_236/var(--tw-bg-opacity,1))] text-xs font-bold px-3 py-1.5 rounded-full hover:bg-gray-50 transition-colors shadow-sm whitespace-nowrap"
                             >
-                              开通会员
+                              {user.is_member_expired ? '开通会员' : '升级会员'}
                             </button>
                           </div>
-                          <div className="flex items-end justify-between">
+
+                          <div className="flex items-end justify-between relative z-10">
                             <div>
-                              <div className="text-xs opacity-70 mb-0.5">当前积分</div>
-                              <div className="text-3xl font-bold leading-none">{user.points || 0}</div>
+                              <div className="text-[10px] text-white/70 mb-1 font-medium uppercase tracking-wider">当前积分</div>
+                              <div className="text-3xl font-bold leading-none">{(user.points || 0).toLocaleString()}</div>
                             </div>
                             <div className="flex flex-col items-end gap-2">
-                              <button 
+                              <button
                                 onClick={() => setPointsModalOpen(true)}
                                 className="flex items-center gap-0.5 text-xs opacity-80 hover:opacity-100 transition-opacity"
                               >
                                 积分明细 <ChevronRight className="w-3 h-3" />
                               </button>
-                              <button 
+                              <button
                                 onClick={() => openMembershipModal('points')}
                                 className="bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs px-3 py-1 rounded-full hover:bg-white/30 transition-colors"
                               >
@@ -383,7 +444,7 @@ export const Header: React.FC = () => {
                           { icon: ShoppingBag, label: '我的订单', action: () => setOrdersModalOpen(true) },
                           { icon: FileText, label: '用户协议' },
                           { icon: Shield, label: '隐私协议' },
-                          { icon: Settings, label: '账户设置', action: () => setAccountSettingsOpen(true) }
+                          { icon: Settings, label: '账户设置' }
                         ].map((item) => (
                           <button 
                             key={item.label}
@@ -434,10 +495,6 @@ export const Header: React.FC = () => {
       <PointsModal 
         isOpen={pointsModalOpen} 
         onClose={() => setPointsModalOpen(false)} 
-      />
-      <AccountSettingsModal 
-        isOpen={accountSettingsOpen}
-        onClose={() => setAccountSettingsOpen(false)}
       />
       <MessageCenter 
         open={messageCenterOpen}

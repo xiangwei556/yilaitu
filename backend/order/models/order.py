@@ -32,6 +32,10 @@ class Order(Base):
     expire_at = Column(DateTime, nullable=True) # 订单过期时间
     retry_count = Column(Integer, default=0) # 支付状态查询重试次数
 
+    # 自动扣款相关字段
+    is_auto_deduct = Column(Integer, default=0) # 是否自动扣款订单：0-否 1-是
+    contract_id = Column(BigInteger, nullable=True) # 关联签约协议ID
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -71,6 +75,10 @@ class OrderPaid(Base):
     expire_at = Column(DateTime, nullable=True) # 订单过期时间
     retry_count = Column(Integer, default=0) # 支付状态查询重试次数
 
+    # 自动扣款相关字段
+    is_auto_deduct = Column(Integer, default=0) # 是否自动扣款订单：0-否 1-是
+    contract_id = Column(BigInteger, nullable=True) # 关联签约协议ID
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -109,6 +117,10 @@ class OrderHistory(Base):
     notify_url = Column(String(255), nullable=True) # 支付回调通知地址
     expire_at = Column(DateTime, nullable=True) # 订单过期时间
     retry_count = Column(Integer, default=0) # 支付状态查询重试次数
+
+    # 自动扣款相关字段
+    is_auto_deduct = Column(Integer, default=0) # 是否自动扣款订单：0-否 1-是
+    contract_id = Column(BigInteger, nullable=True) # 关联签约协议ID
 
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

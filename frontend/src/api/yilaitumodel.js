@@ -68,3 +68,14 @@ export const deleteMyModel = (id) => {
 export const addSystemModelToMy = (systemModelId) => {
     return request.post(`/yilaitumodel/add-system-to-my`, { system_model_id: systemModelId });
 };
+
+// 参考图相关API
+export const uploadCankaotu = (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request.post('/yilaitumodel/my-models/cankaotu', formData);
+};
+
+export const deleteCankaotu = (id) => {
+    return request.delete(`/yilaitumodel/my-models/cankaotu/${id}`);
+};

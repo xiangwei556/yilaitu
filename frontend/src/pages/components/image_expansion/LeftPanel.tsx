@@ -317,7 +317,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           {isGenerating ? '生成中...' : '立即生成'}
           <span className="flex items-center gap-1 bg-white/20 rounded-full px-2 py-0.5 text-xs font-normal">
             30
-            <Coins className="w-3.5 h-3.5" />
+            <img src="/yidou.svg" alt="icon" className="w-3.5 h-3.5" />
           </span>
         </button>
       </div>

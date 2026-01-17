@@ -1,22 +1,16 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Select, Radio, message } from 'antd';
+import { Card, Button, Radio, message } from 'antd';
+import { ProForm, ProFormText, ProFormTextArea, ProFormSelect } from '@ant-design/pro-components';
 import { sendMessage } from '../../../api/message';
 
-const { Option } = Select;
-
 const SendMessage = () => {
-  const [form] = Form.useForm();
+  const [form] = ProForm.useForm();
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // If sending to all users, we might need a different API or logic
-      // But for now, we assume receiver_id is provided or handle it in backend
-      // The current API requires receiver_id
-      
       if (values.target === 'all') {
-        // TODO: Implement broadcast API
         message.warning('群发功能暂未开放，请指定用户ID');
         setLoading(false);
         return;
@@ -41,59 +35,63 @@ const SendMessage = () => {
 
   return (
     <Card title="发送消息" bordered={false}>
-      <Form
+      <ProForm
         form={form}
-        layout="vertical"
         onFinish={onFinish}
         initialValues={{ target: 'specific', type: 'system' }}
-        style={{ maxWidth: 600 }}
+        submitter={{
+          render: (_, dom) => (
+            <Button type="primary" htmlType="submit" loading={loading} block>
+              发送消息
+            </Button>
+          ),
+        }}
       >
-        <Form.Item name="target" label="发送对象">
-          <Radio.Group>
-            <Radio value="specific">指定用户</Radio>
-            <Radio value="all" disabled>全站用户 (暂未开放)</Radio>
-          </Radio.Group>
-        </Form.Item>
+        <ProFormSelect
+          name="target"
+          label="发送对象"
+          options={[
+            { label: '指定用户', value: 'specific' },
+            { label: '全站用户 (暂未开放)', value: 'all', disabled: true },
+          ]}
+          rules={[{ required: true, message: '请选择发送对象' }]}
+        />
 
-        <Form.Item 
-          noStyle 
-          shouldUpdate={(prev, current) => prev.target !== current.target}
-        >
-          {({ getFieldValue }) => 
-            getFieldValue('target') === 'specific' && (
-              <Form.Item 
-                name="receiver_id" 
-                label="用户ID" 
-                rules={[{ required: true, message: '请输入用户ID' }]}
-              >
-                <Input placeholder="请输入接收消息的用户ID" />
-              </Form.Item>
-            )
-          }
-        </Form.Item>
+        <ProFormText
+          name="receiver_id"
+          label="用户ID"
+          placeholder="请输入接收消息的用户ID"
+          rules={[{ required: true, message: '请输入用户ID' }]}
+          dependencies={['target']}
+          hidden={(values) => values.target !== 'specific'}
+        />
 
-        <Form.Item name="type" label="消息类型" rules={[{ required: true }]}>
-          <Select>
-            <Option value="system">系统通知</Option>
-            <Option value="business">业务消息</Option>
-            <Option value="private">私信</Option>
-          </Select>
-        </Form.Item>
+        <ProFormSelect
+          name="type"
+          label="消息类型"
+          options={[
+            { label: '系统通知', value: 'system' },
+            { label: '业务消息', value: 'business' },
+            { label: '私信', value: 'private' },
+          ]}
+          rules={[{ required: true, message: '请选择消息类型' }]}
+        />
 
-        <Form.Item name="title" label="消息标题" rules={[{ required: true, message: '请输入标题' }]}>
-          <Input placeholder="请输入消息标题" />
-        </Form.Item>
+        <ProFormText
+          name="title"
+          label="消息标题"
+          placeholder="请输入消息标题"
+          rules={[{ required: true, message: '请输入标题' }]}
+        />
 
-        <Form.Item name="content" label="消息内容" rules={[{ required: true, message: '请输入内容' }]}>
-          <Input.TextArea rows={6} placeholder="请输入消息内容" showCount maxLength={500} />
-        </Form.Item>
-
-        <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading} block>
-            发送消息
-          </Button>
-        </Form.Item>
-      </Form>
+        <ProFormTextArea
+          name="content"
+          label="消息内容"
+          placeholder="请输入消息内容"
+          fieldProps={{ rows: 6, showCount: true, maxLength: 500 }}
+          rules={[{ required: true, message: '请输入内容' }]}
+        />
+      </ProForm>
     </Card>
   );
 };

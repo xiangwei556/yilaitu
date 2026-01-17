@@ -1,50 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Switch, message, Space, Select } from 'antd';
+import React, { useState } from 'react';
+import { ProTable, ModalForm, ProFormText, ProFormTextArea, ProFormSelect, ProFormDigit } from '@ant-design/pro-components';
+import { Button, message, Tag } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import request from '../../../utils/request';
 
 const PackageConfig = () => {
-  const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
+  const actionRef = React.useRef();
+  const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  const fetchPackages = async () => {
-    setLoading(true);
+  const fetchDetail = async () => {
+    const res = await request.get(`/membership/admin/packages/${editingId}`);
+    return res;
+  };
+
+  const handleSubmit = async (values) => {
     try {
-      const res = await request.get('/membership/admin/packages');
-      setPackages(res);
-    } catch (error) {
-      message.error('Failed to fetch packages');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPackages();
-  }, []);
-
-  const handleEdit = (record) => {
-    setEditingId(record.id);
-    form.setFieldsValue(record);
-    setIsModalVisible(true);
-  };
-
-  const handleAdd = () => {
-    setEditingId(null);
-    form.resetFields();
-    setIsModalVisible(true);
-  };
-
-  const handleDelete = async (id) => {
-      // Implement delete logic (soft delete usually)
-      message.info("Delete not implemented yet");
-  }
-
-  const handleOk = async () => {
-    try {
-      const values = await form.validateFields();
       if (editingId) {
         await request.put(`/membership/admin/packages/${editingId}`, values);
         message.success('套餐已更新');
@@ -52,85 +23,239 @@ const PackageConfig = () => {
         await request.post('/membership/admin/packages', values);
         message.success('套餐已创建');
       }
-      setIsModalVisible(false);
-      fetchPackages();
+      setModalVisible(false);
+      actionRef.current?.reload();
+      return true;
     } catch (error) {
       message.error('操作失败');
+      return false;
     }
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-    { title: '套餐名称', dataIndex: 'name', key: 'name', width: 120 },
-    { title: '类型', dataIndex: 'type', key: 'type', width: 100, render: (type) => {
-      const typeMap = { 'ordinary': '普通会员', 'professional': '专业会员', 'enterprise': '企业会员' };
-      return typeMap[type] || type;
-    }},
-    { title: '套餐说明', dataIndex: 'description', key: 'description', width: 200, ellipsis: true, tooltip: (text) => text },
-    { title: '月度定价', dataIndex: 'price', key: 'price', width: 100 },
-    { title: '原价', dataIndex: 'original_price', key: 'original_price', width: 100 },
-    { title: '每月赠送积分', dataIndex: 'points', key: 'points', width: 120 },
-    { title: '权益列表', dataIndex: 'rights', key: 'rights', width: 250, ellipsis: true, tooltip: (text) => text },
-    { title: '状态', dataIndex: 'status', key: 'status', width: 80, render: (status) => {
-      return status === 'enabled' ? '启动' : '禁止';
-    }},
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 80,
+      search: false,
+    },
+    {
+      title: '套餐名称',
+      dataIndex: 'name',
+      width: 120,
+    },
+    {
+      title: '类型',
+      dataIndex: 'type',
+      width: 120,
+      valueType: 'select',
+      valueEnum: {
+        ordinary: { text: '普通会员' },
+        professional: { text: '专业会员' },
+        enterprise: { text: '企业会员' },
+      },
+    },
+    {
+      title: '套餐说明',
+      dataIndex: 'description',
+      width: 200,
+      ellipsis: true,
+      search: false,
+    },
+    {
+      title: '月度定价',
+      dataIndex: 'price',
+      width: 100,
+      search: false,
+    },
+    {
+      title: '原价',
+      dataIndex: 'original_price',
+      width: 100,
+      search: false,
+    },
+    {
+      title: '每月赠送积分',
+      dataIndex: 'points',
+      width: 120,
+      search: false,
+    },
+    {
+      title: '有效期(天)',
+      dataIndex: 'duration_days',
+      width: 100,
+      search: false,
+    },
+    {
+      title: '权益列表',
+      dataIndex: 'rights',
+      width: 250,
+      ellipsis: true,
+      search: false,
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      width: 100,
+      valueType: 'select',
+      valueEnum: {
+        enabled: { text: '启用', status: 'Success' },
+        disabled: { text: '禁用', status: 'Default' },
+      },
+      render: (_, record) => (
+        <Tag color={record.status === 'enabled' ? 'green' : 'red'}>
+          {record.status === 'enabled' ? '启用' : '禁用'}
+        </Tag>
+      ),
+    },
     {
       title: '操作',
       key: 'action',
-      width: 100,
+      width: 120,
+      fixed: 'right',
+      search: false,
       render: (_, record) => (
-        <Space size="middle">
-          <a onClick={() => handleEdit(record)}>编辑</a>
-        </Space>
+        <Button
+          type="link"
+          size="small"
+          onClick={() => {
+            setEditingId(record.id);
+            setModalVisible(true);
+          }}
+        >
+          编辑
+        </Button>
       ),
     },
   ];
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={handleAdd}>新增套餐</Button>
-      </div>
-      <Table columns={columns} dataSource={packages} rowKey="id" loading={loading} />
-      
-      <Modal title={editingId ? "编辑套餐" : "新增套餐"} open={isModalVisible} onOk={handleOk} onCancel={() => setIsModalVisible(false)} width={600}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="套餐名称" rules={[{ required: true }]}>
-            <Input placeholder="请输入套餐名称" />
-          </Form.Item>
-          <Form.Item name="description" label="套餐说明">
-            <Input.TextArea placeholder="请输入套餐说明" rows={2} />
-          </Form.Item>
-          <Form.Item name="price" label="月度定价" rules={[{ required: true }]}>
-            <InputNumber style={{ width: '100%' }} precision={2} placeholder="请输入月度定价" />
-          </Form.Item>
-          <Form.Item name="original_price" label="原价">
-            <InputNumber style={{ width: '100%' }} precision={2} placeholder="请输入原价" />
-          </Form.Item>
-          <Form.Item name="rights" label="权益列表">
-            <Input.TextArea placeholder="请输入权益列表（最多500字）" rows={4} maxLength={500} showCount />
-          </Form.Item>
+    <>
+      <ProTable
+        columns={columns}
+        actionRef={actionRef}
+        request={async () => {
+          const res = await request.get('/membership/admin/packages');
+          return {
+            data: res || [],
+            success: true,
+            total: (res || []).length,
+          };
+        }}
+        rowKey="id"
+        search={false}
+        pagination={false}
+        dateFormatter="string"
+        headerTitle="套餐配置"
+        toolBarRender={() => [
+          <Button
+            key="create"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingId(null);
+              setModalVisible(true);
+            }}
+          >
+            新增套餐
+          </Button>,
+        ]}
+      />
 
-          <Form.Item name="status" label="状态" rules={[{ required: true }]}>
-            <Select placeholder="请选择状态">
-              <Select.Option value="enabled">启动</Select.Option>
-              <Select.Option value="disabled">禁止</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="type" label="类型" rules={[{ required: true }]}>
-            <Select placeholder="请选择类型">
-              <Select.Option value="ordinary">普通会员</Select.Option>
-              <Select.Option value="professional">专业会员</Select.Option>
-              <Select.Option value="enterprise">企业会员</Select.Option>
-            </Select>
-          </Form.Item>
-          
-          <Form.Item name="points" label="每月赠送积分" rules={[{ required: true, type: 'integer', min: 0 }]}>
-            <InputNumber style={{ width: '100%' }} precision={0} placeholder="请输入每月赠送积分" />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+      <ModalForm
+        title={editingId ? '编辑套餐' : '新增套餐'}
+        open={modalVisible}
+        onOpenChange={setModalVisible}
+        onFinish={handleSubmit}
+        request={editingId ? fetchDetail : undefined}
+        modalProps={{
+          destroyOnClose: true,
+          width: 600,
+        }}
+        initialValues={{
+          status: 'enabled',
+          type: 'ordinary',
+          duration_days: 30,
+        }}
+      >
+        <ProFormText
+          name="name"
+          label="套餐名称"
+          placeholder="请输入套餐名称"
+          rules={[{ required: true, message: '请输入套餐名称' }]}
+        />
+
+        <ProFormTextArea
+          name="description"
+          label="套餐说明"
+          placeholder="请输入套餐说明"
+          fieldProps={{ rows: 2 }}
+        />
+
+        <ProFormDigit
+          name="price"
+          label="月度定价"
+          placeholder="请输入月度定价"
+          min={0}
+          precision={2}
+          rules={[{ required: true, message: '请输入月度定价' }]}
+        />
+
+        <ProFormDigit
+          name="original_price"
+          label="原价"
+          placeholder="请输入原价"
+          min={0}
+          precision={2}
+        />
+
+        <ProFormDigit
+          name="points"
+          label="每月赠送积分"
+          placeholder="请输入每月赠送积分"
+          min={0}
+          precision={0}
+          rules={[{ required: true, message: '请输入每月赠送积分' }]}
+        />
+
+        <ProFormDigit
+          name="duration_days"
+          label="有效期(天)"
+          placeholder="请输入套餐有效期天数"
+          min={1}
+          precision={0}
+          rules={[{ required: true, message: '请输入有效期天数' }]}
+        />
+
+        <ProFormTextArea
+          name="rights"
+          label="权益列表"
+          placeholder="请输入权益列表（最多500字）"
+          fieldProps={{ rows: 4, maxLength: 500, showCount: true }}
+        />
+
+        <ProFormSelect
+          name="status"
+          label="状态"
+          options={[
+            { label: '启用', value: 'enabled' },
+            { label: '禁用', value: 'disabled' },
+          ]}
+          rules={[{ required: true, message: '请选择状态' }]}
+        />
+
+        <ProFormSelect
+          name="type"
+          label="类型"
+          options={[
+            { label: '普通会员', value: 'ordinary' },
+            { label: '专业会员', value: 'professional' },
+            { label: '企业会员', value: 'enterprise' },
+          ]}
+          rules={[{ required: true, message: '请选择类型' }]}
+        />
+      </ModalForm>
+    </>
   );
 };
 

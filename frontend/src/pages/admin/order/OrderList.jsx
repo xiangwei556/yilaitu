@@ -1,44 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Card, message } from 'antd';
+import React from 'react';
+import { ProTable } from '@ant-design/pro-components';
 import request from '../../../utils/request';
 
 const OrderList = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const res = await request.get('/order/admin/paid-orders');
-      setOrders(res);
-    } catch (error) {
-      message.error('Failed to fetch orders');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const typeMap = {
-    'membership': '会员',
-    'membership_upgrade': '会员升级',
-    'points': '积分'
-  };
-
-  const statusMap = {
-    'paid': '已支付',
-    'refunded': '已退款'
-  };
+  const actionRef = React.useRef();
 
   const columns = [
-    { title: '订单号', dataIndex: 'order_no', key: 'order_no' },
+    { 
+      title: '订单号', 
+      dataIndex: 'order_no', 
+      width: 180,
+    },
     { 
       title: '用户头像', 
       dataIndex: 'user_id', 
-      key: 'avatar',
+      width: 100,
+      search: false,
       render: () => (
         <img 
           src="/touxiang.svg" 
@@ -47,28 +24,73 @@ const OrderList = () => {
         />
       )
     },
-    { title: '用户 ID', dataIndex: 'user_id', key: 'user_id' },
-    { title: '金额', dataIndex: 'amount', key: 'amount' },
+    { 
+      title: '用户 ID', 
+      dataIndex: 'user_id', 
+      width: 100,
+    },
+    { 
+      title: '金额', 
+      dataIndex: 'amount', 
+      width: 100,
+      search: false,
+    },
     { 
       title: '类型', 
       dataIndex: 'type', 
-      key: 'type',
-      render: (type) => typeMap[type] || type
+      width: 120,
+      valueType: 'select',
+      valueEnum: {
+        membership: { text: '会员' },
+        membership_upgrade: { text: '会员升级' },
+        points: { text: '积分' },
+      },
     },
     { 
       title: '状态', 
       dataIndex: 'status', 
-      key: 'status',
-      render: (status) => statusMap[status] || status
+      width: 100,
+      valueType: 'select',
+      valueEnum: {
+        paid: { text: '已支付', status: 'Success' },
+        refunded: { text: '已退款', status: 'Default' },
+      },
     },
-    { title: '支付时间', dataIndex: 'payment_time', key: 'payment_time' },
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+    { 
+      title: '支付时间', 
+      dataIndex: 'payment_time', 
+      width: 180,
+      valueType: 'dateTime',
+      search: false,
+    },
+    { 
+      title: '创建时间', 
+      dataIndex: 'created_at', 
+      width: 180,
+      valueType: 'dateTime',
+      search: false,
+    },
   ];
 
   return (
-    <Card title="订单管理">
-      <Table columns={columns} dataSource={orders} rowKey="id" loading={loading} />
-    </Card>
+    <ProTable
+      columns={columns}
+      actionRef={actionRef}
+      request={async () => {
+        const res = await request.get('/order/admin/paid-orders');
+        return {
+          data: res || [],
+          success: true,
+          total: (res || []).length,
+        };
+      }}
+      rowKey="id"
+      search={false}
+      pagination={false}
+      dateFormatter="string"
+      headerTitle="订单管理"
+      toolBarRender={false}
+    />
   );
 };
 

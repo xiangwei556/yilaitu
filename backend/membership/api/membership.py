@@ -41,6 +41,20 @@ def list_packages_admin(
     packages = db.query(MembershipPackage).offset(skip).limit(limit).all()
     return packages
 
+@router.get("/admin/packages/{package_id}", response_model=MembershipPackageSchema)
+def get_package_admin(
+    package_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["admin", "super_admin", "growth-hacker", "developer"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    package = db.query(MembershipPackage).filter(MembershipPackage.id == package_id).first()
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+    return package
+
 @router.put("/admin/packages/{package_id}", response_model=MembershipPackageSchema)
 def update_package(
     package_id: int,

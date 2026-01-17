@@ -6,6 +6,7 @@ export interface Pose {
   id: number;
   description: string;
   url: string;
+  skeleton_url?: string;
 }
 
 export interface PosesResponse {
@@ -14,9 +15,10 @@ export interface PosesResponse {
   data: Pose[];
 }
 
-export const getPoses = async (): Promise<PosesResponse> => {
+export const getPoses = async (gender?: string): Promise<PosesResponse> => {
   try {
-    const response = await axios.get<PosesResponse>(`${API_BASE_URL}/pose-split/poses`);
+    const params = gender ? `?gender=${gender}` : '';
+    const response = await axios.get<PosesResponse>(`${API_BASE_URL}/pose-split/sys-poses${params}`);
     return response.data;
   } catch (error) {
     console.error('获取姿势列表失败:', error);

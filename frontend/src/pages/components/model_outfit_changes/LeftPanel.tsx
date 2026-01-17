@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
+import { Modal, message } from 'antd';
 import { useAuthStore } from '../../../stores/useAuthStore';
-import { getMyModels, getSystemModels } from '../../../api/yilaitumodel';
+import { getMyModels, uploadCankaotu, deleteCankaotu } from '../../../api/yilaitumodel';
+import { getPublicSystemModels } from '../../../api/sysImages';
 import AddModelModal from '../AddModelModal';
 
 interface LeftPanelProps {
@@ -66,6 +68,15 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   const [modalPreviewPos, setModalPreviewPos] = useState({ top: 0, arrowTop: 0 });
   const popoverRef = useRef<HTMLDivElement>(null);
   const modalGridRef = useRef<HTMLDivElement>(null);
+  const hasMounted = useRef(false);
+
+  // 参考图上传相关
+  const cankaotuInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingCankaotu, setUploadingCankaotu] = useState(false);
+
+  // 删除确认相关
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   const categories = ['全部', '亚洲', '欧美', '儿童'];
 
@@ -88,11 +99,11 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
     if (!isLoggedIn || !user) {
       return;
     }
-    
+
     setMyModelsLoading(true);
     try {
       const skip = (page - 1) * limit;
-      const response = await getMyModels({ skip, page_size: limit }) as any;
+      const response = await getMyModels({ skip, page_size: limit, type: 'cankaotu' }) as any;
       
       const modelsWithId = response.items.map((model: any) => ({
         ...model,
@@ -123,7 +134,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
     setSystemModelsLoading(true);
     try {
       const skip = (page - 1) * limit;
-      const response = await getSystemModels({ skip, page_size: limit, category }) as any;
+      const response = await getPublicSystemModels({ skip, page_size: limit, category }) as any;
       
       const modelsWithId = response.items.map((model: any) => ({
         ...model,
@@ -207,8 +218,9 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   }, [onResetRef, onLoadFromRecordRef]);
 
   useEffect(() => {
-    if (isLoggedIn && user) {
+    if (isLoggedIn && user && !hasMounted.current) {
       fetchMyModels();
+      hasMounted.current = true;
     }
   }, [isLoggedIn, user]);
 
@@ -295,6 +307,55 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   const handleModelAdded = () => {
     setAddModelModalVisible(false);
     fetchMyModels(1, 12);
+  };
+
+  // 处理参考图上传
+  const handleCankaotuUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!isLoggedIn) {
+      openAuthModal();
+      return;
+    }
+
+    setUploadingCankaotu(true);
+    try {
+      await uploadCankaotu(file);
+      message.success('上传成功');
+      fetchMyModels(1, 12);
+    } catch (error) {
+      console.error('上传失败:', error);
+      message.error('上传失败');
+    } finally {
+      setUploadingCankaotu(false);
+      if (cankaotuInputRef.current) {
+        cankaotuInputRef.current.value = '';
+      }
+    }
+  };
+
+  // 处理删除点击
+  const handleDeleteClick = (e: React.MouseEvent, modelId: number) => {
+    e.stopPropagation();
+    setDeleteTargetId(modelId);
+    setDeleteConfirmVisible(true);
+  };
+
+  // 确认删除
+  const handleConfirmDelete = async () => {
+    if (!deleteTargetId) return;
+
+    try {
+      await deleteCankaotu(deleteTargetId);
+      message.success('删除成功');
+      setDeleteConfirmVisible(false);
+      setDeleteTargetId(null);
+      fetchMyModels(1, 12);
+    } catch (error) {
+      console.error('删除失败:', error);
+      message.error('删除失败');
+    }
   };
 
   const handleGenerate = async () => {
@@ -587,51 +648,102 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
 
           <div className="grid grid-cols-3 gap-3">
             {selectedModelTab === 'my' && allMyModels.length === 0 ? (
-              <div 
-                onClick={handleAddModelClick}
-                className="col-span-3 bg-primary/5 dark:bg-primary/10 border border-dashed border-primary/30 dark:border-primary/50 rounded-xl p-6 text-center flex flex-col items-center justify-center h-80 cursor-pointer hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
-              >
-                <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-4xl text-primary">add_photo_alternate</span>
+              <>
+                {/* 隐藏的文件输入 */}
+                <input
+                  ref={cankaotuInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCankaotuUpload}
+                  className="hidden"
+                />
+                <div
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      openAuthModal();
+                      return;
+                    }
+                    cankaotuInputRef.current?.click();
+                  }}
+                  className="col-span-3 bg-primary/5 dark:bg-primary/10 border border-dashed border-primary/30 dark:border-primary/50 rounded-xl p-6 text-center flex flex-col items-center justify-center h-80 cursor-pointer hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
+                >
+                  <div className="flex justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-4xl text-primary">
+                        {uploadingCankaotu ? 'progress_activity' : 'add_photo_alternate'}
+                      </span>
+                    </div>
                   </div>
+                  <p className="font-medium text-text-primary-light dark:text-text-primary-dark text-lg">
+                    {uploadingCankaotu ? '上传中...' : '上传参考图'}
+                  </p>
+                  <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark mt-2">支持JPG/JPEG/PNG格式</p>
                 </div>
-                <p className="font-medium text-text-primary-light dark:text-text-primary-dark text-lg">上传模特图</p>
-                <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark mt-2">支持JPG/JPEG/PNG格式</p>
-              </div>
+              </>
             ) : (
               <>
                 {selectedModelTab === 'my' && (
-                  <button
-                    onClick={handleAddModelClick}
-                    className="w-full h-36 rounded-lg bg-primary/5 dark:bg-primary/10 border border-dashed border-primary/30 dark:border-primary/50 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-2xl text-primary">add_photo_alternate</span>
-                    </div>
-                    <span className="text-xs font-medium text-text-primary-light dark:text-text-primary-dark">上传模特图</span>
-                  </button>
+                  <>
+                    {/* 隐藏的文件输入 */}
+                    <input
+                      ref={cankaotuInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCankaotuUpload}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => {
+                        if (!isLoggedIn) {
+                          openAuthModal();
+                          return;
+                        }
+                        cankaotuInputRef.current?.click();
+                      }}
+                      disabled={uploadingCankaotu}
+                      className="w-full h-36 rounded-lg bg-primary/5 dark:bg-primary/10 border border-dashed border-primary/30 dark:border-primary/50 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-2xl text-primary">
+                          {uploadingCankaotu ? 'progress_activity' : 'add_photo_alternate'}
+                        </span>
+                      </div>
+                      <span className="text-xs font-medium text-text-primary-light dark:text-text-primary-dark">
+                        {uploadingCankaotu ? '上传中...' : '上传参考图'}
+                      </span>
+                    </button>
+                  </>
                 )}
 
                 {(selectedModelTab === 'my' ? visibleMyModels : visibleSystemModels).map((model, index) => {
                   const imageUrl = model.avatar || (model.images && model.images[0]?.file_path) || '';
                   return (
-                    <button
-                      key={model.id}
-                      onClick={() => handleModelSelect(model.id)}
-                      className={clsx(
-                        'w-full h-36 rounded-lg overflow-hidden relative transition-all',
-                        selectedModelIndex === model.id
-                          ? 'ring-2 ring-primary ring-offset-2'
-                          : ''
+                    <div key={model.id} className="relative group">
+                      <button
+                        onClick={() => handleModelSelect(model.id)}
+                        className={clsx(
+                          'w-full h-36 rounded-lg overflow-hidden relative transition-all',
+                          selectedModelIndex === model.id
+                            ? 'ring-2 ring-primary ring-offset-2'
+                            : ''
+                        )}
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={`模特${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                      {/* 删除图标 - 仅在"我的参考图"tab显示 */}
+                      {selectedModelTab === 'my' && (
+                        <button
+                          onClick={(e) => handleDeleteClick(e, model.id)}
+                          className="absolute top-1 left-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <span className="material-symbols-outlined text-white !text-lg" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>delete</span>
+                        </button>
                       )}
-                    >
-                      <img
-                        src={imageUrl}
-                        alt={`模特${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
+                    </div>
                   );
                 })}
 
@@ -670,7 +782,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
             {!isGenerating && (
               <span className="flex items-center gap-1 bg-white/20 rounded-full px-2 py-0.5 text-sm font-normal">
                 30
-                <span className="text-base">🪙</span>
+                <img src="/yidou.svg" alt="icon" className="w-4 h-4" />
               </span>
             )}
           </button>
@@ -781,6 +893,48 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           )}
         </div>
       )}
+
+      {/* 删除确认弹窗 */}
+      <Modal
+        open={deleteConfirmVisible}
+        onCancel={() => setDeleteConfirmVisible(false)}
+        footer={null}
+        closable={false}
+        width={400}
+        centered
+        styles={{ body: { padding: 0 } }}
+        zIndex={10000}
+      >
+        <div className="bg-white p-6 rounded-2xl relative">
+          <button
+            onClick={() => setDeleteConfirmVisible(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <h3 className="text-lg font-bold text-black mb-6">删除提示</h3>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-4 h-4 text-orange-500" />
+            </div>
+            <span className="text-base text-gray-700 font-medium">确定要删除这张参考图吗？</span>
+          </div>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setDeleteConfirmVisible(false)}
+              className="px-5 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium transition-colors"
+            >
+              取消
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              className="px-5 py-2 rounded-lg bg-[rgb(55_19_236_/_0.9)] hover:bg-[rgb(55_19_236_/_0.8)] text-white font-medium transition-colors shadow-sm"
+            >
+              确认删除
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <AddModelModal 
         visible={addModelModalVisible}

@@ -15,6 +15,7 @@ class MembershipPackage(Base):
     status = Column(String(20), default="enabled") # 状态：enabled（启动）、disabled（禁止）
     type = Column(String(20), nullable=False) # 类型：ordinary（普通会员）、professional（专业会员）、enterprise（企业会员）
     points = Column(Integer, nullable=False, default=0) # 每月赠送积分
+    duration_days = Column(Integer, nullable=False, default=30) # 套餐有效期（天）
 
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -24,13 +25,13 @@ class UserMembership(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, index=True, nullable=False)
-    package_id = Column(BigInteger, index=True, nullable=False)
-    
+    level = Column(String(20), index=True, nullable=False, comment='会员等级：ordinary/professional/enterprise')
+
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
-    
+
     status = Column(Integer, default=1) # 1:生效中, 0:已过期, -1:已退订
     auto_renew = Column(Boolean, default=False)
-    
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

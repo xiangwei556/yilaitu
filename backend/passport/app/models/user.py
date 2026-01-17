@@ -13,6 +13,8 @@ class User(Base):
     hashed_password = Column(String(255))
     status = Column(Integer, default=1) # 1:启用, 0:禁用, -1:注销中
     role = Column(String(20), default="user") # user, admin, super_admin
+    member_level = Column(Integer, default=0) # 会员等级: 0-非会员, 1-普通会员, 2-专业会员, 3-企业会员
+    member_expire_time = Column(DateTime, nullable=True) # 会员过期时间
     cancel_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

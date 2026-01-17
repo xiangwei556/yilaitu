@@ -1,45 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Tag } from 'antd';
+import React, { useRef } from 'react';
+import { Tag } from 'antd';
+import { ProTable } from '@ant-design/pro-components';
 import request from '../../utils/request';
 
 const AuditLogs = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0
-  });
-
-  const fetchLogs = async (page = 1, size = 10) => {
-    setLoading(true);
-    try {
-      const res = await request.get('/admin/logs', {
-        params: {
-          page,
-          size
-        }
-      });
-      setData(res.items);
-      setPagination({
-        ...pagination,
-        current: page,
-        total: res.total
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
-  const handleTableChange = (pagination) => {
-    fetchLogs(pagination.current, pagination.pageSize);
-  };
+  const actionRef = useRef();
 
   const columns = [
     {
@@ -87,17 +52,31 @@ const AuditLogs = () => {
   ];
 
   return (
-    <div>
-      <h2>操作日志</h2>
-      <Table 
-        columns={columns} 
-        dataSource={data} 
-        rowKey="id"
-        pagination={pagination}
-        loading={loading}
-        onChange={handleTableChange}
-      />
-    </div>
+    <ProTable
+      columns={columns}
+      actionRef={actionRef}
+      request={async (params) => {
+        const res = await request.get('/admin/logs', {
+          params: {
+            page: params.current,
+            size: params.pageSize
+          }
+        });
+        return {
+          data: res.items || [],
+          success: true,
+          total: res.total || 0,
+        };
+      }}
+      rowKey="id"
+      pagination={{
+        showSizeChanger: true,
+        showTotal: (total) => `共 ${total} 条`,
+      }}
+      dateFormatter="string"
+      headerTitle="操作日志"
+      search={false}
+    />
   );
 };
 

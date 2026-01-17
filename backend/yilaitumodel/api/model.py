@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form, Query, HTTPException, Body
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc
 from typing import Optional, List
@@ -266,15 +267,23 @@ def get_my_models(
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=100), # Allow larger page size for user models
     skip: Optional[int] = Query(None),
+    type: Optional[str] = Query(None),  # 新增type参数
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    query = db.query(YiLaiTuModel).filter(YiLaiTuModel.user_id == current_user.id, YiLaiTuModel.type == "user", YiLaiTuModel.status == "enabled")
+    query = db.query(YiLaiTuModel).filter(YiLaiTuModel.user_id == current_user.id, YiLaiTuModel.status == "enabled")
+
+    # 根据type参数筛选
+    if type:
+        query = query.filter(YiLaiTuModel.type == type)
+    else:
+        query = query.filter(YiLaiTuModel.type == "user")
+
     total = query.count()
-    
+
     offset_val = skip if skip is not None else (page - 1) * page_size
     items = query.order_by(desc(YiLaiTuModel.created_at)).offset(offset_val).limit(page_size).all()
-    
+
     return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 @router.post("/my-models", response_model=ModelSchema)
@@ -421,3 +430,87 @@ def add_system_model_to_my(
     db.refresh(user_model)
     
     return {"id": user_model.id, "message": "添加成功"}
+
+
+# 参考图数据目录
+CANKAOTU_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "cankaotu")
+os.makedirs(CANKAOTU_DIR, exist_ok=True)
+
+
+@router.post("/my-models/cankaotu", response_model=ModelSchema)
+def upload_cankaotu(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """上传参考图"""
+    # 1. 保存图片到磁盘
+    ext = os.path.splitext(file.filename)[1] or ".jpg"
+    fname = f"{uuid.uuid4().hex}{ext}"
+    fs_path = os.path.join(CANKAOTU_DIR, fname)
+    with open(fs_path, "wb") as f:
+        f.write(file.file.read())
+    file_url = f"/api/v1/yilaitumodel/cankaotu/{fname}"
+
+    # 2. 创建记录
+    model_data = {
+        "type": "cankaotu",
+        "user_id": current_user.id,
+        "status": "enabled",
+        "name": fname,
+        "avatar": file_url,
+        "gender": "",
+        "age_group": "",
+        "body_type": "",
+        "style": ""
+    }
+    m = YiLaiTuModel(**model_data)
+    db.add(m)
+    db.commit()
+    db.refresh(m)
+
+    # 3. 创建图片记录
+    img = YiLaiTuModelImage(model_id=m.id, file_path=file_url, is_cover=True)
+    db.add(img)
+    db.commit()
+    db.refresh(m)
+
+    return m
+
+
+@router.delete("/my-models/cankaotu/{model_id}")
+def delete_cankaotu(
+    model_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """删除参考图"""
+    m = db.query(YiLaiTuModel).filter(
+        YiLaiTuModel.id == model_id,
+        YiLaiTuModel.user_id == current_user.id,
+        YiLaiTuModel.type == "cankaotu"
+    ).first()
+    if not m:
+        return {"deleted": 0}
+
+    # 删除图片文件
+    for img in m.images:
+        try:
+            if img.file_path.startswith("/api/v1/yilaitumodel/cankaotu/"):
+                fname = img.file_path.split("/")[-1]
+                os.remove(os.path.join(CANKAOTU_DIR, fname))
+        except Exception:
+            pass
+
+    db.delete(m)
+    db.commit()
+    return {"deleted": 1}
+
+
+@router.get("/cankaotu/{filename}")
+def get_cankaotu_file(filename: str):
+    """获取参考图文件"""
+    file_path = os.path.join(CANKAOTU_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    raise HTTPException(status_code=404, detail="File not found")

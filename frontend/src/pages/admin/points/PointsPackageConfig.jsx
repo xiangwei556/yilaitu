@@ -1,45 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Switch, message, Space, Select } from 'antd';
+import React, { useState } from 'react';
+import { ProTable, ModalForm, ProFormText, ProFormTextArea, ProFormSelect, ProFormDigit, ProFormSwitch } from '@ant-design/pro-components';
+import { Button, message, Switch } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import request from '../../../utils/request';
 
 const PointsPackageConfig = () => {
-  const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const actionRef = React.useRef();
+  const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form] = Form.useForm();
 
-  const fetchPackages = async () => {
-    setLoading(true);
+  const fetchDetail = async () => {
+    const res = await request.get(`/points/admin/packages/${editingId}`);
+    return res;
+  };
+
+  const handleSubmit = async (values) => {
     try {
-      const res = await request.get('/points/admin/packages');
-      setPackages(res);
-    } catch (error) {
-      message.error('获取积分包失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPackages();
-  }, []);
-
-  const handleAdd = () => {
-    form.resetFields();
-    setEditingId(null);
-    setIsModalVisible(true);
-  };
-
-  const handleEdit = (record) => {
-    setEditingId(record.id);
-    form.setFieldsValue(record);
-    setIsModalVisible(true);
-  };
-
-  const handleOk = async () => {
-    try {
-      const values = await form.validateFields();
       if (editingId) {
         await request.put(`/points/admin/packages/${editingId}`, values);
         message.success('积分包已更新');
@@ -47,96 +23,216 @@ const PointsPackageConfig = () => {
         await request.post('/points/admin/packages', values);
         message.success('积分包已创建');
       }
-      setIsModalVisible(false);
-      setEditingId(null);
-      fetchPackages();
+      setModalVisible(false);
+      actionRef.current?.reload();
+      return true;
     } catch (error) {
-      // 显示后端返回的详细错误信息
       const errorMsg = error.response?.data?.detail || '操作失败';
       message.error(errorMsg);
+      return false;
     }
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id' },
-    { title: '积分包名称', dataIndex: 'name', key: 'name' },
-    { title: '积分数', dataIndex: 'points', key: 'points' },
-    { title: '售价', dataIndex: 'price', key: 'price' },
-    { title: '原价', dataIndex: 'original_price', key: 'original_price' },
-    { title: '消耗说明', dataIndex: 'description', key: 'description' },
-    { title: '有效期天数', dataIndex: 'validity_days', key: 'validity_days' },
-    { 
-      title: '类型', 
-      dataIndex: 'package_type', 
-      key: 'package_type',
-      render: (type) => {
-        const typeMap = {
-          system: '系统积分包',
-          festival: '节日赠积分',
-          share: '分享活动奖励',
-          invite: '邀请好友奖励'
-        };
-        return typeMap[type] || type;
-      }
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 80,
+      search: false,
     },
-    { 
-      title: '启用', 
-      dataIndex: 'is_active', 
-      key: 'is_active',
-      render: (active) => <Switch checked={active} disabled />
+    {
+      title: '积分包名称',
+      dataIndex: 'name',
+      width: 150,
     },
-    { 
-      title: '操作', 
+    {
+      title: '积分数',
+      dataIndex: 'points',
+      width: 100,
+      search: false,
+    },
+    {
+      title: '售价',
+      dataIndex: 'price',
+      width: 100,
+      search: false,
+    },
+    {
+      title: '原价',
+      dataIndex: 'original_price',
+      width: 100,
+      search: false,
+    },
+    {
+      title: '消耗说明',
+      dataIndex: 'description',
+      width: 200,
+      ellipsis: true,
+      search: false,
+    },
+    {
+      title: '有效期天数',
+      dataIndex: 'validity_days',
+      width: 120,
+      search: false,
+    },
+    {
+      title: '类型',
+      dataIndex: 'package_type',
+      width: 150,
+      valueType: 'select',
+      valueEnum: {
+        system: { text: '系统积分包' },
+        festival: { text: '节日赠积分' },
+        share: { text: '分享活动奖励' },
+        invite: { text: '邀请好友奖励' },
+      },
+    },
+    {
+      title: '启用',
+      dataIndex: 'is_active',
+      width: 100,
+      valueType: 'select',
+      valueEnum: {
+        true: { text: '是', status: 'Success' },
+        false: { text: '否', status: 'Default' },
+      },
+      render: (_, record) => <Switch checked={record.is_active} disabled />,
+    },
+    {
+      title: '操作',
       key: 'action',
+      width: 120,
+      fixed: 'right',
+      search: false,
       render: (_, record) => (
-        <Space size="middle">
-          <Button type="primary" onClick={() => handleEdit(record)}>编辑</Button>
-        </Space>
+        <Button
+          type="link"
+          size="small"
+          onClick={() => {
+            setEditingId(record.id);
+            setModalVisible(true);
+          }}
+        >
+          编辑
+        </Button>
       ),
     },
   ];
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={handleAdd}>新增积分包</Button>
-      </div>
-      <Table columns={columns} dataSource={packages} rowKey="id" loading={loading} />
-      
-      <Modal title={editingId ? "编辑积分包" : "新增积分包"} open={isModalVisible} onOk={handleOk} onCancel={() => setIsModalVisible(false)}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }, { max: 50 }]}>
-            <Input style={{ width: '100%' }} placeholder="请输入积分包名称" />
-          </Form.Item>
-          <Form.Item name="points" label="积分数" rules={[{ required: true }]}>
-            <InputNumber style={{ width: '100%' }} precision={0} />
-          </Form.Item>
-          <Form.Item name="price" label="售价">
-            <InputNumber style={{ width: '100%' }} precision={2} placeholder="可为空" />
-          </Form.Item>
-          <Form.Item name="original_price" label="原价">
-            <InputNumber style={{ width: '100%' }} precision={2} placeholder="可为空" />
-          </Form.Item>
-          <Form.Item name="description" label="消耗说明" rules={[{ max: 100 }]}>
-            <Input.TextArea style={{ width: '100%' }} rows={3} placeholder="请输入消耗说明" />
-          </Form.Item>
-          <Form.Item name="validity_days" label="有效期天数" initialValue={0}>
-            <InputNumber style={{ width: '100%' }} precision={0} placeholder="0表示永久有效" />
-          </Form.Item>
-          <Form.Item name="package_type" label="积分包类型" initialValue="system">
-            <Select style={{ width: '100%' }}>
-              <Select.Option value="system">系统积分包</Select.Option>
-              <Select.Option value="festival">节日赠积分</Select.Option>
-              <Select.Option value="share">分享活动奖励</Select.Option>
-              <Select.Option value="invite">邀请好友奖励</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="is_active" label="启用" valuePropName="checked" initialValue={true}>
-            <Switch />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+    <>
+      <ProTable
+        columns={columns}
+        actionRef={actionRef}
+        request={async () => {
+          const res = await request.get('/points/admin/packages');
+          return {
+            data: res || [],
+            success: true,
+            total: (res || []).length,
+          };
+        }}
+        rowKey="id"
+        search={false}
+        pagination={false}
+        dateFormatter="string"
+        headerTitle="积分包配置"
+        toolBarRender={() => [
+          <Button
+            key="create"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingId(null);
+              setModalVisible(true);
+            }}
+          >
+            新增积分包
+          </Button>,
+        ]}
+      />
+
+      <ModalForm
+        title={editingId ? '编辑积分包' : '新增积分包'}
+        open={modalVisible}
+        onOpenChange={setModalVisible}
+        onFinish={handleSubmit}
+        request={editingId ? fetchDetail : undefined}
+        modalProps={{
+          destroyOnClose: true,
+        }}
+        initialValues={{
+          validity_days: 0,
+          package_type: 'system',
+          is_active: true,
+        }}
+      >
+        <ProFormText
+          name="name"
+          label="名称"
+          placeholder="请输入积分包名称"
+          rules={[{ required: true, message: '请输入积分包名称' }, { max: 50, message: '最多50个字符' }]}
+        />
+
+        <ProFormDigit
+          name="points"
+          label="积分数"
+          placeholder="请输入积分数"
+          min={0}
+          precision={0}
+          rules={[{ required: true, message: '请输入积分数' }]}
+        />
+
+        <ProFormDigit
+          name="price"
+          label="售价"
+          placeholder="可为空"
+          min={0}
+          precision={2}
+        />
+
+        <ProFormDigit
+          name="original_price"
+          label="原价"
+          placeholder="可为空"
+          min={0}
+          precision={2}
+        />
+
+        <ProFormTextArea
+          name="description"
+          label="消耗说明"
+          placeholder="请输入消耗说明"
+          fieldProps={{ rows: 3, maxLength: 100, showCount: true }}
+        />
+
+        <ProFormDigit
+          name="validity_days"
+          label="有效期天数"
+          placeholder="0表示永久有效"
+          min={0}
+          precision={0}
+        />
+
+        <ProFormSelect
+          name="package_type"
+          label="积分包类型"
+          options={[
+            { label: '系统积分包', value: 'system' },
+            { label: '节日赠积分', value: 'festival' },
+            { label: '分享活动奖励', value: 'share' },
+            { label: '邀请好友奖励', value: 'invite' },
+          ]}
+          rules={[{ required: true, message: '请选择积分包类型' }]}
+        />
+
+        <ProFormSwitch
+          name="is_active"
+          label="启用"
+        />
+      </ModalForm>
+    </>
   );
 };
 
