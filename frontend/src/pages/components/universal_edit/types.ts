@@ -2,6 +2,7 @@ export enum EditorMode {
   PENCIL = 'pencil',
   ERASER = 'eraser',
   DRAG = 'drag',
+  SMART_SELECT = 'smart-select',
 }
 
 export enum GenerationType {

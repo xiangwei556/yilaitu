@@ -1,5 +1,0 @@
-{
-  "name": "AI Image In-painter",
-  "description": "A sophisticated React-based image editing tool that allows users to doodle on images and use Gemini AI to perform local re-drawing (in-painting) based on text prompts.",
-  "requestFramePermissions": []
-}

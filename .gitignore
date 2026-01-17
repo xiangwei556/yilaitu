@@ -11,8 +11,11 @@ frontend/node_modules/
 .trae/
 
 # Environment variables
+.env
 .env.local
 .env.*.local
+backend/.env
+backend/.env.example
 
 # Build output
 frontend/dist/

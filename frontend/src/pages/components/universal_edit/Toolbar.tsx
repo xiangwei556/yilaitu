@@ -66,6 +66,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     <div className="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col items-center bg-white dark:bg-gray-900 rounded-full shadow-soft border border-gray-100 dark:border-gray-800 py-6 px-2.5 z-30 gap-6">
       <div className="flex flex-col items-center gap-2">
         <button
+          onClick={() => setMode(EditorMode.SMART_SELECT)}
+          className={`tooltip mb-1 p-2 rounded-full transition-all ${mode === EditorMode.SMART_SELECT ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-gray-600'}`}
+        >
+          <span className="material-symbols-outlined text-[20px]">auto_fix</span>
+          <span className="tooltip-text">自动选取</span>
+        </button>
+
+        <button
           onClick={() => setMode(EditorMode.PENCIL)}
           className={`tooltip mb-1 p-2 rounded-full transition-all ${mode === EditorMode.PENCIL ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-gray-600'}`}
         >

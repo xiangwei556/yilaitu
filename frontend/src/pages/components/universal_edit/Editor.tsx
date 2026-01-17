@@ -1,5 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { EditorMode, Point } from './types';
+import { rgbToLab, deltaE } from './colorUtils';
 
 interface EditorProps {
   image: string | null;
@@ -29,6 +30,7 @@ export const Editor: React.FC<EditorProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bgCanvasRef = useRef<HTMLCanvasElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
@@ -36,6 +38,7 @@ export const Editor: React.FC<EditorProps> = ({
   const [lastDrawPos, setLastDrawPos] = useState({ x: 0, y: 0 });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isMouseOverCanvas, setIsMouseOverCanvas] = useState(false);
+  const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
 
   const [showCenterPreview, setShowCenterPreview] = useState(false);
   const previewTimeoutRef = useRef<number | null>(null);
@@ -54,7 +57,7 @@ export const Editor: React.FC<EditorProps> = ({
   }, [brushSize]);
 
   useEffect(() => {
-    if (!image || !bgCanvasRef.current || !canvasRef.current || !containerRef.current) return;
+    if (!image || !bgCanvasRef.current || !canvasRef.current || !containerRef.current || !previewCanvasRef.current) return;
     const img = new Image();
     img.src = image;
     img.crossOrigin = "anonymous";
@@ -69,7 +72,9 @@ export const Editor: React.FC<EditorProps> = ({
         dw = dh * ratio;
       }
 
-      [bgCanvasRef.current, canvasRef.current].forEach(c => {
+      setImgSize({ width: dw, height: dh });
+
+      [bgCanvasRef.current, canvasRef.current, previewCanvasRef.current].forEach(c => {
         if (c) { c.width = dw; c.height = dh; }
       });
 
@@ -129,6 +134,61 @@ export const Editor: React.FC<EditorProps> = ({
     onStateChange(canvasRef.current);
   };
 
+  // 智能选取核心算法：基于 CIELAB 的边缘感知泛洪填充
+  const runSmartSelect = useCallback((startPoint: Point, isPreview = false) => {
+    if (!bgCanvasRef.current || !canvasRef.current || !previewCanvasRef.current) return;
+    const bgCtx = bgCanvasRef.current.getContext('2d', { willReadFrequently: true });
+    const targetCtx = isPreview ? previewCanvasRef.current.getContext('2d') : canvasRef.current.getContext('2d');
+    if (!bgCtx || !targetCtx) return;
+
+    const w = bgCanvasRef.current.width;
+    const h = bgCanvasRef.current.height;
+    const x = Math.floor(startPoint.x);
+    const y = Math.floor(startPoint.y);
+    if (x < 0 || x >= w || y < 0 || y >= h) return;
+
+    const imgData = bgCtx.getImageData(0, 0, w, h);
+    const pixels = imgData.data;
+
+    // 获取起始点的 Lab 颜色
+    const startIdx = (y * w + x) * 4;
+    const startLab = rgbToLab(pixels[startIdx], pixels[startIdx + 1], pixels[startIdx + 2]);
+
+    // 动态阈值策略 - 边缘感知模式
+    const baseTolerance = 12;
+
+    const targetData = isPreview ? targetCtx.createImageData(w, h) : targetCtx.getImageData(0, 0, w, h);
+    const tPix = targetData.data;
+
+    // 连通区域填充算法
+    const visited = new Uint8Array(w * h);
+    const stack: [number, number][] = [[x, y]];
+    while (stack.length > 0) {
+      const [cx, cy] = stack.pop()!;
+      const idx = cy * w + cx;
+      if (visited[idx]) continue;
+      visited[idx] = 1;
+
+      const pIdx = idx * 4;
+      const curLab = rgbToLab(pixels[pIdx], pixels[pIdx + 1], pixels[pIdx + 2]);
+
+      if (deltaE(startLab, curLab) < baseTolerance) {
+        // 使用紫色填充选区
+        tPix[pIdx] = 139; tPix[pIdx + 1] = 92; tPix[pIdx + 2] = 246; tPix[pIdx + 3] = isPreview ? 80 : 180;
+        if (cx > 0) stack.push([cx - 1, cy]);
+        if (cx < w - 1) stack.push([cx + 1, cy]);
+        if (cy > 0) stack.push([cx, cy - 1]);
+        if (cy < h - 1) stack.push([cx, cy + 1]);
+      }
+    }
+
+    if (isPreview) targetCtx.clearRect(0, 0, w, h);
+    targetCtx.putImageData(targetData, 0, 0);
+    if (!isPreview) {
+      saveToHistory();
+    }
+  }, []);
+
   const getRelativePos = (e: any) => {
     if (!containerRef.current || !canvasRef.current) return { x: 0, y: 0 };
     const rect = containerRef.current.getBoundingClientRect();
@@ -157,6 +217,10 @@ export const Editor: React.FC<EditorProps> = ({
       setLastPanPos({ x: e.touches ? e.touches[0].clientX : e.clientX, y: e.touches ? e.touches[0].clientY : e.clientY });
       return;
     }
+    if (mode === EditorMode.SMART_SELECT) {
+      runSmartSelect(pos);
+      return;
+    }
     setIsDrawing(true);
     setLastDrawPos(pos);
   };
@@ -168,6 +232,14 @@ export const Editor: React.FC<EditorProps> = ({
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       setMousePos({ x: cx - rect.left, y: cy - rect.top });
+    }
+
+    // 智能选取悬停预选逻辑
+    if (mode === EditorMode.SMART_SELECT && !isDrawing && !isPanning) {
+      const pos = getRelativePos(e);
+      runSmartSelect(pos, true);
+    } else {
+      previewCanvasRef.current?.getContext('2d')?.clearRect(0, 0, imgSize.width, imgSize.height);
     }
 
     if (isPanning) {
@@ -218,15 +290,16 @@ export const Editor: React.FC<EditorProps> = ({
         }}
       >
         <canvas ref={bgCanvasRef} className="absolute inset-0 z-0" />
+        <canvas ref={previewCanvasRef} className="absolute inset-0 z-5 opacity-40 pointer-events-none" />
         <canvas
           ref={canvasRef}
           className="absolute inset-0 z-10 touch-none pointer-events-auto"
           style={{
-            cursor: mode === EditorMode.DRAG ? 'grab' : 'none',
+            cursor: mode === EditorMode.DRAG ? 'grab' : (mode === EditorMode.SMART_SELECT ? 'crosshair' : 'none'),
             opacity: 0.6
           }}
           onMouseEnter={() => setIsMouseOverCanvas(true)}
-          onMouseLeave={() => { setIsMouseOverCanvas(false); stopDrawing(); }}
+          onMouseLeave={() => { setIsMouseOverCanvas(false); stopDrawing(); previewCanvasRef.current?.getContext('2d')?.clearRect(0, 0, imgSize.width, imgSize.height); }}
           onMouseDown={handlePointerDown}
           onMouseUp={stopDrawing}
           onTouchStart={handlePointerDown}
@@ -235,7 +308,7 @@ export const Editor: React.FC<EditorProps> = ({
         />
       </div>
 
-      {(showCenterPreview || (isMouseOverCanvas && !isPanning && mode !== EditorMode.DRAG)) && image && (
+      {(showCenterPreview || (isMouseOverCanvas && !isPanning && mode !== EditorMode.DRAG && mode !== EditorMode.SMART_SELECT)) && image && (
         <div
           className="pointer-events-none absolute z-50 rounded-full border-2 border-white shadow-lg bg-primary/20 ring-1 ring-black/10 transition-all duration-75"
           style={{
