@@ -134,7 +134,11 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
     setSystemModelsLoading(true);
     try {
       const skip = (page - 1) * limit;
-      const response = await getPublicSystemModels({ skip, page_size: limit, category }) as any;
+      const params: any = { skip, page_size: limit };
+      if (category !== '全部') {
+        params.category = category;
+      }
+      const response = await getPublicSystemModels(params) as any;
       
       const modelsWithId = response.items.map((model: any) => ({
         ...model,

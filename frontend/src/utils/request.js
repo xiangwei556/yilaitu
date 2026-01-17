@@ -5,7 +5,7 @@ import { message } from 'antd';
 console.log('环境变量VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
 const service = axios.create({
   //baseURL: 'http://localhost:8001/api/v1', // 直接设置为后端地址
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1', // 使用环境变量或相对路径,生成环境使用
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api.yilaitu.com/v1', // 使用环境变量或相对路径,生成环境使用
   timeout: 60000,
 });
 console.log('创建的axios实例baseURL:', service.defaults.baseURL);

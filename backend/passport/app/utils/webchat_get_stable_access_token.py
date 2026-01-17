@@ -56,10 +56,27 @@ class WeChatStableAccessToken:
             logger.error(f"获取微信稳定 Access Token 失败: {e}")
             raise
     
-    async def _fetch_stable_access_token(self) -> str:
+    async def force_refresh_token(self) -> str:
+        """
+        强制刷新 Access Token
+        1. 调用微信接口强制刷新
+        2. 更新 Redis 缓存
+        3. 返回新 Token
+        """
+        logger.info("收到强制刷新 Access Token 请求")
+        token = await self._fetch_stable_access_token(force_refresh=True)
+        redis = await get_redis()
+        await redis.setex(self.REDIS_KEY, self.TOKEN_EXPIRE_SECONDS, token)
+        logger.info(f"强制刷新完成，新 Token 已保存到 Redis")
+        return token
+
+    async def _fetch_stable_access_token(self, force_refresh: bool = False) -> str:
         """
         从微信服务器获取稳定 Access Token
         
+        Args:
+            force_refresh: 是否强制刷新
+            
         Returns:
             str: 微信 Access Token
         """
@@ -67,8 +84,10 @@ class WeChatStableAccessToken:
             "grant_type": "client_credential",
             "appid": self.app_id,
             "secret": self.app_secret,
-            "force_refresh": False
+            "force_refresh": force_refresh
         }
+        
+        logger.info(f"正在请求微信 Access Token, appid: {self.app_id}, secret: {self.app_secret}")
         
         async with httpx.AsyncClient() as client:
             try:

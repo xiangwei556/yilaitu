@@ -58,51 +58,62 @@ class WeChatQRCodeService:
             await redis.setex(redis_key, expire_seconds, "pending")
             logger.info(f"场景值 {scene_id} 已存储到Redis，等待用户扫码")
             
-            # 3. 调用微信 API 生成二维码
-            params = {
-                "access_token": access_token
-            }
-            
-            data = {
-                "expire_seconds": expire_seconds,
-                "action_name": action_name,
-                "action_info": action_info
-            }
-            
-            async with httpx.AsyncClient() as client:
-                response = await client.post(self.API_URL, params=params, json=data)
-                response.raise_for_status()
-                result = response.json()
-                
-                logger.info(f"微信API返回的完整结果: {result}")
-                
-                # 检查是否有错误
-                if "errcode" in result and result["errcode"] != 0:
-                    logger.error(f"微信 API 错误: {result}")
-                    raise Exception(f"微信错误: {result.get('errmsg')}")
-                
-                # 4. 提取返回参数
-                ticket = result.get("ticket")
-                expire_seconds_result = result.get("expire_seconds")
-                url = result.get("url")
-                
-                if not ticket:
-                    raise Exception("微信 API 返回的 ticket 为空")
-                
-                # 5. 组装二维码图片 URL
-                qr_code_url = f"https://mp.weixin.qq.com/cgi-bin/showqrcode?ticket={ticket}"
-                
-                logger.info(f"成功生成微信二维码，scene_id: {scene_id}, ticket: {ticket[:20]}...")
-                logger.info(f"微信API返回的url: {url}")
-                
-                # 6. 返回结果
-                return {
-                    "scene_id": scene_id,
-                    "ticket": ticket,
-                    "expire_seconds": expire_seconds_result,
-                    "url": url,
-                    "qr_code_url": qr_code_url
+            # 3. 调用微信 API 生成二维码 (包含重试机制)
+            max_retries = 1
+            for attempt in range(max_retries + 1):
+                params = {
+                    "access_token": access_token
                 }
+                
+                data = {
+                    "expire_seconds": expire_seconds,
+                    "action_name": action_name,
+                    "action_info": action_info
+                }
+                
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(self.API_URL, params=params, json=data)
+                    response.raise_for_status()
+                    result = response.json()
+                    
+                    logger.info(f"微信API返回的完整结果 (attempt {attempt}): {result}")
+                    
+                    # 检查是否有错误
+                    if "errcode" in result and result["errcode"] != 0:
+                        # 处理 Access Token 过期的情况 (40001: 获取access_token时AppSecret错误，或者access_token无效; 40014: 不合法的access_token; 42001: access_token超时)
+                        if result["errcode"] in [40001, 40014, 42001] and attempt < max_retries:
+                            logger.warning(f"微信 Access Token 失效 (code: {result['errcode']})，正在强制刷新重试...")
+                            access_token = await wechat_stable_token.force_refresh_token()
+                            continue
+                        
+                        logger.error(f"微信 API 错误: {result}")
+                        raise Exception(f"微信错误: {result.get('errmsg')} rid: {result.get('rid', 'unknown')}")
+                    
+                    # 成功，跳出循环
+                    break
+                
+            # 4. 提取返回参数
+            ticket = result.get("ticket")
+            expire_seconds_result = result.get("expire_seconds")
+            url = result.get("url")
+            
+            if not ticket:
+                raise Exception("微信 API 返回的 ticket 为空")
+            
+            # 5. 组装二维码图片 URL
+            qr_code_url = f"https://mp.weixin.qq.com/cgi-bin/showqrcode?ticket={ticket}"
+            
+            logger.info(f"成功生成微信二维码，scene_id: {scene_id}, ticket: {ticket[:20]}...")
+            logger.info(f"微信API返回的url: {url}")
+            
+            # 6. 返回结果
+            return {
+                "scene_id": scene_id,
+                "ticket": ticket,
+                "expire_seconds": expire_seconds_result,
+                "url": url,
+                "qr_code_url": qr_code_url
+            }
                 
         except Exception as e:
             logger.error(f"生成微信二维码失败: {e}")

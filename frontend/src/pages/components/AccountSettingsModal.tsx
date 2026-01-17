@@ -15,6 +15,7 @@ interface UserProfile {
   nickname: string;
   avatar: string;
   phone: string | null;
+  full_phone?: string;
   wechat_bound: boolean;
 }
 
@@ -413,12 +414,6 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
               <div>
                 <p className="text-sm text-gray-500 mb-1">微信绑定状态</p>
                 <div className="flex items-center space-x-2">
-                  {console.log('=== 渲染微信绑定状态 ===')}
-                  {console.log('profile对象:', profile)}
-                  {console.log('profile.wechat_bound值:', profile?.wechat_bound)}
-                  {console.log('profile.wechat_bound类型:', typeof profile?.wechat_bound)}
-                  {console.log('profile.wechat_bound布尔值:', Boolean(profile?.wechat_bound))}
-                  {console.log('=== 渲染条件判断 ===')}
                   {profile && profile.wechat_bound === true ? (
                     <>
                       <Check className="w-4 h-4 text-green-500" />

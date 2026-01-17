@@ -4,6 +4,7 @@ node_modules/
 backend/__pycache__/
 backend/**/__pycache__/
 backend/venv/
+backend/venv311/
 backend/env/
 frontend/node_modules/
 
@@ -63,6 +64,8 @@ coverage/
 *.tmp
 *.temp
 .cache/
+swapfile
+nginx.conf.temp
 
 # Other
 nodejs.msi
@@ -98,11 +101,13 @@ verify_order.py
 
 # Browser console scripts
 browser_console_script.js
-browser_console_script_with_wechat_bind.js
-simple_console_script.txt
 
-# PowerShell scripts
-start_mcp_server.ps1
-
-# Windows system files
-nul
+# Temporary patch scripts
+frontend/patch_assets.py
+frontend/inspect_assets.py
+frontend/inspect_bqz.py
+frontend/read_snippet.py
+frontend/scan_all_api_v1.py
+frontend/scan_all_api_v1_glob.py
+frontend/find_refs.py
+frontend/search_api.py

@@ -25,9 +25,10 @@ interface RightPanelProps {
   currentRecord?: any;
   findRecordRef?: React.MutableRefObject<((taskId: string) => any) | null>;
   onFeedback?: (feedback: string, feedbackId: number) => void;
+  onContinueCreating?: () => void;
 }
 
-export const RightPanel: React.FC<RightPanelProps> = ({ isGenerating, generatedImages, taskId, currentRecord, findRecordRef, onFeedback }) => {
+export const RightPanel: React.FC<RightPanelProps> = ({ isGenerating, generatedImages, taskId, currentRecord, findRecordRef, onFeedback, onContinueCreating }) => {
   const [downloading, setDownloading] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [actionsHeight, setActionsHeight] = useState(0);

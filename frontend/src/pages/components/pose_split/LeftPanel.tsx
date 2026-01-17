@@ -364,7 +364,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
                     }}
                     className="w-full bg-slate-50 border-0 rounded-lg text-sm p-3 placeholder:text-gray-400/60 resize-none focus:outline-none focus:ring-2 focus:ring-primary/20" 
                     placeholder="输入想要生成的动作" 
-                    rows="3"
+                    rows={3}
                   ></textarea>
                 </div>
               ))}

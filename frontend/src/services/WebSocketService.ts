@@ -47,8 +47,8 @@ class WebSocketService {
     this.userId = userId;
     
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const wsUrl = `${wsProtocol}//${host}/api/v1/message/ws/${userId}`;
+    const host = 'api.yilaitu.com';
+    const wsUrl = `${wsProtocol}//${host}/v1/message/ws/${userId}`;
     
     console.log('=== Connecting to WebSocket ===', 'url:', wsUrl);
     

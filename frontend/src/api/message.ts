@@ -4,11 +4,12 @@ export interface Message {
   id: number;
   title: string;
   content: string;
-  type: 'system' | 'private' | 'business';
+  type: 'system' | 'private' | 'business' | 'task';
   status: 'read' | 'unread';
   created_at: string;
   link?: string;
   priority?: string;
+  extra_data?: string;
 }
 
 export interface MessageListResponse {

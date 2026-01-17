@@ -5,8 +5,7 @@ import { message } from 'antd';
 import request from '../../utils/request';
 
 message.config({
-  zIndex: 1000000,
-  top: '20%'
+  top: 100
 });
 
 const AuthModalContent: React.FC = () => {

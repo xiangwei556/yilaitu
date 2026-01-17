@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8001/api/v1';
+const API_BASE_URL = 'https://api.yilaitu.com/v1';
 
 export interface Pose {
   id: number;
